@@ -1,6 +1,6 @@
 # Giskard
 
-A random collection of tools I find useful for data science. A.k.a. my helpful robot 
+A random collection of tools I find useful for data science. A.K.A. my helpful robot 
 companion (the name comes from the [*Robot* series](https://en.wikipedia.org/wiki/List_of_Robot_series_characters#R._Giskard_Reventlov)).
 
 For the most part these are functions, classes, etc. that I have found useful in more

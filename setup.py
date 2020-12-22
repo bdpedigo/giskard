@@ -1,4 +1,4 @@
-# Copyright (c) Benjamin Pedigo (@bdpedigo) and contributors.
+# Copyright (c) Benjamin Pedigo (@bdpedigo).
 # Licensed under the MIT License.
 
 
