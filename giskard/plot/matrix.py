@@ -11,13 +11,18 @@ def dissimilarity_clustermap(
     method="average",
     center=0,
     cmap="RdBu_r",
+    invert=False,
     **kwargs
 ):
+    if invert:
+        cluster_dissimilarity = 1 - dissimilarity
+    else:
+        cluster_dissimilarity = dissimilarity
     # since it assumes a distance/dissimilarity is input, the metric kwarg doesnt matter
-    Z = linkage(squareform(dissimilarity), method=method)
+    Z = linkage(squareform(cluster_dissimilarity), method=method)
 
     if palette is not None and colors is not None:
-        colors = np.vectorize(palette.get)(colors)
+        colors = np.array(np.vectorize(palette.get)(colors))
 
     out = sns.clustermap(
         dissimilarity,
@@ -27,6 +32,8 @@ def dissimilarity_clustermap(
         center=center,
         row_colors=colors,
         col_colors=colors,
-        **kwargs
+        xticklabels=False,
+        yticklabels=False,
+        **kwargs,
     )
     return out
