@@ -123,6 +123,7 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
+        "colorcet",
         "graspologic-native",
         "hyppo>=0.1.3",
         "joblib>=0.17.0",  # Older versions of joblib cause issue #806.  Transitive dependency of hyppo.
