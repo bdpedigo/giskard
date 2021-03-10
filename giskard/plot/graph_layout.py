@@ -37,6 +37,7 @@ def graphplot(
     edge_linewidth=0.2,
     edge_alpha=0.2,
     spines=False,
+    subsample_edges=False,
     embed_kws={},
     umap_kws={},
     scatterplot_kws={},
@@ -147,6 +148,12 @@ def graphplot(
             rows.append({"pre": pre, "post": post, "edge_idx": i})
 
     edgelist = pd.DataFrame(rows)
+
+    if isinstance(subsample_edges, float):
+        n_edges = len(edgelist)
+        n_show_edges = int(np.ceil(n_edges * subsample_edges))
+        choice_inds = np.random.choice(n_edges, size=n_show_edges, replace=False)
+        edgelist = edgelist.iloc[choice_inds]
 
     edgelist["hue"] = edgelist[edge_hue].map(meta[hue])
 
