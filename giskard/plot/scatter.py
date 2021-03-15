@@ -101,7 +101,14 @@ def textplot(x, y, text, ax=None, x_pad=0, y_pad=0, **kwargs):
 
 
 def screeplot(
-    singular_values, check_n_components=None, ax=None, title="Screeplot", n_elbows=4
+    singular_values,
+    check_n_components=None,
+    ax=None,
+    title="Screeplot",
+    n_elbows=4,
+    label_elbows=True,
+    label=None,
+    **kwargs
 ):
     if ax is None:
         ax = plt.gca()
@@ -112,7 +119,7 @@ def screeplot(
 
     index = np.arange(1, len(singular_values) + 1)
 
-    sns.lineplot(x=index, y=singular_values, ax=ax, zorder=1)
+    sns.lineplot(x=index, y=singular_values, ax=ax, zorder=1, label=label, **kwargs)
     sns.scatterplot(
         x=elbows,
         y=elbow_vals,
@@ -123,17 +130,18 @@ def screeplot(
         s=80,
         linewidth=2,
     )
-    textplot(
-        elbows,
-        elbow_vals,
-        elbows,
-        ax=ax,
-        color="darkred",
-        fontsize="small",
-        x_pad=0.5,
-        y_pad=0,
-        zorder=3,
-    )
+    if label_elbows:
+        textplot(
+            elbows,
+            elbow_vals,
+            elbows,
+            ax=ax,
+            color="darkred",
+            fontsize="small",
+            x_pad=0.5,
+            y_pad=0,
+            zorder=3,
+        )
     ax.set(title=title, xlabel="Index", ylabel="Singular value")
     ax.yaxis.set_major_locator(plt.MaxNLocator(3))
     return ax
