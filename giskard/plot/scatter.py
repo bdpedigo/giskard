@@ -158,6 +158,7 @@ def matched_stripplot(
     matchline_kws=None,
     **kwargs,
 ):
+    data = data.copy()
     if ax is None:
         ax = plt.gca()
 
