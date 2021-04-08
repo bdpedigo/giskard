@@ -19,12 +19,11 @@ def simple_scatterplot(
     s=15,
     alpha=0.7,
     linewidth=0,
+    spines_off=True,
     **kwargs
 ):
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=figsize)
-    ax.spines["left"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
     plot_df = pd.DataFrame(data=X[:, :2], columns=["0", "1"])
     plot_df["labels"] = labels
     sns.scatterplot(
@@ -40,8 +39,13 @@ def simple_scatterplot(
         **kwargs,
     )
     ax.set(title=title)
-    soft_axis_off(ax)
-    ax.get_legend().remove()
+    if spines_off:
+        soft_axis_off(ax, top=False, bottom=False, right=False, left=False)
+    else:
+        soft_axis_off(ax, top=False, bottom=True, right=False, left=True)
+    leg = ax.get_legend()
+    if leg is not None:
+        leg.remove()
     if legend:
         # convenient default that I often use, places in the top right outside of plot
         ax.legend(bbox_to_anchor=(1, 1), loc="upper left")
