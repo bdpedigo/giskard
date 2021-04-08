@@ -6,6 +6,13 @@ def soft_axis_off(ax, top=False, bottom=False, left=False, right=False):
     ax.spines["right"].set_visible(right)
 
 
+def axis_on(ax):
+    ax.spines["top"].set_visible(True)
+    ax.spines["bottom"].set_visible(True)
+    ax.spines["left"].set_visible(True)
+    ax.spines["right"].set_visible(True)
+
+
 def _get_slice(items, n_items):
     if items is None:
         return slice(0, n_items)
