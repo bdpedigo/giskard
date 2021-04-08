@@ -20,7 +20,7 @@ def simple_scatterplot(
     alpha=0.7,
     linewidth=0,
     spines_off=True,
-    **kwargs
+    **kwargs,
 ):
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=figsize)
@@ -105,7 +105,14 @@ def textplot(x, y, text, ax=None, x_pad=0, y_pad=0, **kwargs):
 
 
 def screeplot(
-    singular_values, check_n_components=None, ax=None, title="Screeplot", n_elbows=4
+    singular_values,
+    check_n_components=None,
+    ax=None,
+    title="Screeplot",
+    n_elbows=4,
+    label_elbows=True,
+    label=None,
+    **kwargs,
 ):
     if ax is None:
         ax = plt.gca()
@@ -116,7 +123,7 @@ def screeplot(
 
     index = np.arange(1, len(singular_values) + 1)
 
-    sns.lineplot(x=index, y=singular_values, ax=ax, zorder=1)
+    sns.lineplot(x=index, y=singular_values, ax=ax, zorder=1, label=label, **kwargs)
     sns.scatterplot(
         x=elbows,
         y=elbow_vals,
@@ -127,17 +134,61 @@ def screeplot(
         s=80,
         linewidth=2,
     )
-    textplot(
-        elbows,
-        elbow_vals,
-        elbows,
-        ax=ax,
-        color="darkred",
-        fontsize="small",
-        x_pad=0.5,
-        y_pad=0,
-        zorder=3,
-    )
+    if label_elbows:
+        textplot(
+            elbows,
+            elbow_vals,
+            elbows,
+            ax=ax,
+            color="darkred",
+            fontsize="small",
+            x_pad=0.5,
+            y_pad=0,
+            zorder=3,
+        )
     ax.set(title=title, xlabel="Index", ylabel="Singular value")
     ax.yaxis.set_major_locator(plt.MaxNLocator(3))
+    return ax
+
+
+def matched_stripplot(
+    data,
+    x=None,
+    y=None,
+    jitter=0.2,
+    hue=None,
+    match=None,
+    ax=None,
+    matchline_kws=None,
+    **kwargs,
+):
+    data = data.copy()
+    if ax is None:
+        ax = plt.gca()
+
+    unique_x_var = data[x].unique()
+    ind_map = dict(zip(unique_x_var, range(len(unique_x_var))))
+    data["x"] = data[x].map(ind_map)
+    data["x"] += np.random.uniform(-jitter, jitter, len(data))
+
+    sns.scatterplot(data=data, x="x", y=y, hue=hue, ax=ax, zorder=1, **kwargs)
+
+    if match is not None:
+        unique_match_var = data[match].unique()
+        fake_palette = dict(zip(unique_match_var, len(unique_match_var) * ["black"]))
+        if matchline_kws is None:
+            matchline_kws = dict(alpha=0.2, linewidth=1)
+        sns.lineplot(
+            data=data,
+            x="x",
+            y=y,
+            hue=match,
+            ax=ax,
+            legend=False,
+            palette=fake_palette,
+            zorder=-1,
+            **matchline_kws,
+        )
+    ax.set(xlabel=x, xticks=np.arange(len(unique_x_var)), xticklabels=unique_x_var)
+    ax.get_legend().remove()
     return ax
