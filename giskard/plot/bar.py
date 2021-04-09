@@ -91,7 +91,6 @@ def crosstabplot(
     group_order=None,
     hue=None,
     hue_order=None,
-    orient="v",
     normalize=False,
     figsize=(8, 6),
     ax=None,
@@ -103,8 +102,19 @@ def crosstabplot(
 ):
     counts_by_group = pd.crosstab(data[group], data[hue])
     if group_order is not None:
+        if isinstance(group_order, str):
+            group_order = (
+                data.groupby(group)[group_order]
+                .mean()
+                .sort_values(ascending=False)
+                .index
+            )
         counts_by_group = counts_by_group.reindex(index=group_order)
     if hue_order is not None:
+        if isinstance(hue_order, str):
+            hue_order = (
+                data.groupby(hue)[hue_order].mean().sort_values(ascending=True).index
+            )
         counts_by_group = counts_by_group.reindex(columns=hue_order)
 
     if ax is None:

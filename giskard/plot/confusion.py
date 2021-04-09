@@ -6,8 +6,8 @@ from sklearn.metrics import confusion_matrix
 
 
 def confusionplot(
-    labels1,
-    labels2,
+    data1,
+    data2=None,
     ax=None,
     figsize=(10, 10),
     xlabel="",
@@ -19,11 +19,16 @@ def confusionplot(
     return_confusion_matrix=False,
     **kwargs,
 ):
-    unique_labels = np.unique(list(labels1) + list(labels2))
-    conf_mat = confusion_matrix(
-        labels1, labels2, labels=unique_labels, normalize=normalize
-    )
-    conf_mat = pd.DataFrame(data=conf_mat, index=unique_labels, columns=unique_labels)
+    if data1.ndim == 1:
+        unique_labels = np.unique(list(data1) + list(data2))
+        conf_mat = confusion_matrix(
+            data1, data2, labels=unique_labels, normalize=normalize
+        )
+        conf_mat = pd.DataFrame(
+            data=conf_mat, index=unique_labels, columns=unique_labels
+        )
+    else:
+        conf_mat = data1
 
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=figsize)

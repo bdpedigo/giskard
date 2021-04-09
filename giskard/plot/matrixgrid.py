@@ -37,6 +37,9 @@ class MatrixGrid:
             fig = ax.figure
         divider = make_axes_locatable(ax)
 
+        self.spines = spines
+        self.gap = gap
+
         self.fig = fig
         self.ax = ax
         self.divider = divider
