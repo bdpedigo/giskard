@@ -35,3 +35,9 @@ def merge_axes(fig, axs, rows=None, cols=None):
         ax.remove()
     ax = fig.add_subplot(gs[row_slice, col_slice])
     return ax
+
+
+def legend_upper_right(ax, **kwargs):
+    ax.get_legend().remove()
+    leg = ax.legend(bbox_to_anchor=(1, 1), loc="upper left", **kwargs)
+    return leg
