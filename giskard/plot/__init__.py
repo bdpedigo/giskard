@@ -7,8 +7,9 @@ from .scatter import (
     textplot,
     simple_umap_scatterplot,
     matched_stripplot,
+    scatterplot,
 )
-from .utils import soft_axis_off, axis_on
+from .utils import soft_axis_off, axis_on, legend_upper_right
 from .graph_layout import graphplot
 from .confusion import confusionplot
 from .matrixgrid import MatrixGrid
