@@ -9,3 +9,12 @@ these functions may be PRed upstream eventually, others may not. If you find any
 in here useful please let me know as that is the best motivation to PR that 
 functionality into a "real" repo. If you find any issues or bugs, feel free to 
 [make an issue](https://github.com/bdpedigo/giskard/issues).
+
+## Installation
+Since I make changes to this code often I recommend installing in develop mode.
+To clone from GitHub and install, from the command line do:
+```
+git clone https://github.com/bdpedigo/giskard.git
+cd giskard
+pip install -e .
+```

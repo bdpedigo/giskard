@@ -1,4 +1,4 @@
-from .bar import stacked_barplot
+from .bar import stacked_barplot, crosstabplot
 from .hist import histplot
 from .matrix import dissimilarity_clustermap
 from .scatter import (
