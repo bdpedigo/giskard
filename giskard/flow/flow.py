@@ -46,13 +46,13 @@ def rank_signal_flow(A):
     return perm_inds
 
 
-def rank_graph_match_flow(A, n_init=10, max_iter=30, eps=1e-4, **kwargs):
+def rank_graph_match_flow(A, n_init=5, max_iter=30, eps=1e-4, **kwargs):
     n = len(A)
     try:
         initial_perm = rank_signal_flow(A)
         init = np.eye(n)[initial_perm]
     except np.linalg.LinAlgError:
-        print("SVD did not converge in signal flow")
+        print("WARNING: SVD did not converge in signal flow")
         init = np.full((n, n), 1 / n)
     match_mat = np.zeros((n, n))
     triu_inds = np.triu_indices(n, k=1)
