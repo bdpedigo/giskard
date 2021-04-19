@@ -9,7 +9,7 @@ from .scatter import (
     matched_stripplot,
     scatterplot,
 )
-from .utils import soft_axis_off, axis_on, legend_upper_right
+from .utils import soft_axis_off, axis_on, legend_upper_right, merge_axes
 from .graph_layout import graphplot
 from .confusion import confusionplot
 from .matrixgrid import MatrixGrid
