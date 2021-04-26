@@ -1,8 +1,10 @@
-import seaborn as sns
-from scipy.cluster.hierarchy import linkage, fcluster
-from scipy.spatial.distance import squareform
-import numpy as np
 import colorcet as cc
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib.collections import LineCollection
+from scipy.cluster.hierarchy import fcluster, linkage
+from scipy.spatial.distance import squareform
 
 simple_colors = {0: "black", 1: "lightgrey"}
 
@@ -20,6 +22,8 @@ def dissimilarity_clustermap(
     criterion="distance",
     t=0.5,
     cut_line_kws=None,
+    squarelines=True,
+    squareline_kws={},
     **kwargs,
 ):
     if invert:
@@ -56,6 +60,10 @@ def dissimilarity_clustermap(
         yticklabels=False,
         **kwargs,
     )
+    inds = clustergrid.dendrogram_row.reordered_ind
+
+    if cut and squarelines:
+        plot_squarelines(flat_labels[inds], clustergrid.ax_heatmap, **squareline_kws)
 
     if cut:
         if cut_line_kws is None:
@@ -64,3 +72,29 @@ def dissimilarity_clustermap(
         clustergrid.ax_row_dendrogram.axvline(t, **cut_line_kws)
 
     return clustergrid
+
+
+def plot_squarelines(
+    labels, ax, linewidth=2, linestyle="-", color="darkgrey", **kwargs
+):
+    inds = pd.Series(data=np.arange(len(labels)))
+    first_ind_map = inds.groupby(by=labels, sort=False).first()
+    last_ind_map = inds.groupby(by=labels, sort=False).last()
+    lines = []
+    for label in first_ind_map.keys():
+        first = first_ind_map[label]
+        last = last_ind_map[label] + 1
+        line = [
+            [first, first],
+            [last, first],
+            [last, last],
+            [first, last],
+            [first, first],
+        ]
+        lines.append(line)
+
+    lc = LineCollection(
+        lines, linewidth=linewidth, linestyle=linestyle, color=color, **kwargs
+    )
+    ax.add_collection(lc)
+    return lc

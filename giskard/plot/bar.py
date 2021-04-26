@@ -109,7 +109,15 @@ def crosstabplot(
                 .sort_values(ascending=False)
                 .index
             )
+        elif isinstance(group_order, list):
+            group_order = (
+                data.groupby(group)[group_order]
+                .mean()
+                .sort_values(ascending=False)
+                .index
+            )
         counts_by_group = counts_by_group.reindex(index=group_order)
+
     if hue_order is not None:
         if isinstance(hue_order, str):
             hue_order = (
@@ -132,4 +140,5 @@ def crosstabplot(
             orient=orient,
             **kwargs
         )
+    ax.set(xlabel=group, ylabel="Count")
     return ax

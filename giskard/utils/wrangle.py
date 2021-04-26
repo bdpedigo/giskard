@@ -14,9 +14,9 @@ def get_paired_inds(meta, check_in=True, pair_key="pair", pair_id_key="pair_id")
     if check_in:
         pair_meta = pair_meta[pair_meta[pair_key].isin(pair_meta.index)]
 
-    # remove any pairs for which there is only one neuron
+    # remove any pairs for which there are not two neurons
     pair_group_size = pair_meta.groupby(pair_id_key).size()
-    remove_pairs = pair_group_size[pair_group_size == 1].index
+    remove_pairs = pair_group_size[pair_group_size != 2].index
     pair_meta = pair_meta[~pair_meta[pair_id_key].isin(remove_pairs)]
 
     # make sure each pair is "valid" now
