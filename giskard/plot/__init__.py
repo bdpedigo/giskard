@@ -1,6 +1,6 @@
 from .bar import stacked_barplot, crosstabplot
 from .hist import histplot
-from .matrix import dissimilarity_clustermap
+from .matrix import dissimilarity_clustermap, plot_squarelines
 from .scatter import (
     simple_scatterplot,
     screeplot,
