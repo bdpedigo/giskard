@@ -213,7 +213,7 @@ def scatterplot(
     data = data.copy()
     data["x_shift"] = data[x]
     if shift is not None:
-        groups = data.groupby(shift)
+        groups = data.groupby(shift, sort=False)
         shifts = np.linspace(shift_bounds[0], shift_bounds[1], len(groups))
         shifts = dict(zip(groups.groups.keys(), shifts))
         for group_key, group_data in groups:
