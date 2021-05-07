@@ -65,7 +65,7 @@ def dissimilarity_clustermap(
     if cut and squarelines:
         plot_squarelines(flat_labels[inds], clustergrid.ax_heatmap, **squareline_kws)
 
-    if cut:
+    if cut and criterion == "distance":
         if cut_line_kws is None:
             cut_line_kws = dict(linewidth=1.5, linestyle=":", color="dodgerblue")
         clustergrid.ax_col_dendrogram.axhline(t, **cut_line_kws)
