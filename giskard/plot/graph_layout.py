@@ -20,9 +20,9 @@ from adjustText import adjust_text
 
 
 def graphplot(
-    data,
+    network=None,
+    embedding=None,
     meta=None,
-    input_graph=True,
     embedding_algorithm="ase",
     n_components=8,
     n_neighbors=15,
@@ -33,7 +33,7 @@ def graphplot(
     palette=None,
     ax=None,
     figsize=(10, 10),
-    sizes=(5, 10),
+    sizes=(10, 20),
     legend=False,
     edge_hue="pre",
     edge_linewidth=0.2,
@@ -51,11 +51,12 @@ def graphplot(
     umap_kws={},
     scatterplot_kws={},
 ):
+    networkx = False
+    adj = import_graph(network)  # TODO allow for CSR
     if random_state is None:
         random_state = np.random.default_rng()
-    if input_graph:
+    if embedding is None:
         # if we are given a graph, do an initial embedding
-        adj = import_graph(data, to_csr=True)
 
         if verbose > 0:
             print("Performing initial spectral embedding of the network...")
@@ -75,40 +76,40 @@ def graphplot(
                 embedding = embedder.fit_transform(adj @ adj)
         elif network_order == 1:
             embedding = embedder.fit_transform(adj)
-    else:
-        raise NotImplementedError("Currently not supporting inputs of embeddings.")
 
     # if input is networkx, extract node metadata into a data frame
-    if isinstance(data, (nx.Graph, nx.DiGraph)):
+    if isinstance(network, (nx.Graph, nx.DiGraph)):
         networkx = True
-        index = list(sorted(data.nodes()))
+        index = list(sorted(network.nodes()))
         meta = pd.DataFrame(index=index)
         for attr in [hue, size]:
             if attr is not None:
-                attr_map = nx.get_node_attributes(data, attr)
+                attr_map = nx.get_node_attributes(network, attr)
                 meta[attr] = meta.index.map(attr_map)
-    else:
-        networkx = False
-        index = meta.index
 
-    if verbose > 0:
-        print("Performing UMAP embedding...")
-    # once we have the initial embedding, embed again down to 2D using UMAP
-    umapper = UMAP(
-        n_components=2,
-        n_neighbors=n_neighbors,
-        min_dist=min_dist,
-        metric=metric,
-        random_state=random_state.integers(np.iinfo(np.int32).max),
-        target_weight=supervised_weight,
-        **umap_kws,
-    )
-    if supervised_weight > 0:
-        y = meta[hue].values
-        _, y = np.unique(y, return_inverse=True)
+    index = meta.index
+
+    if embedding.shape[1] > 2:
+        if verbose > 0:
+            print("Performing UMAP embedding...")
+        # once we have the initial embedding, embed again down to 2D using UMAP
+        umapper = UMAP(
+            n_components=2,
+            n_neighbors=n_neighbors,
+            min_dist=min_dist,
+            metric=metric,
+            random_state=random_state.integers(np.iinfo(np.int32).max),
+            target_weight=supervised_weight,
+            **umap_kws,
+        )
+        if supervised_weight > 0:
+            y = meta[hue].values
+            _, y = np.unique(y, return_inverse=True)
+        else:
+            y = None
+        umap_embedding = umapper.fit_transform(embedding, y=y)
     else:
-        y = None
-    umap_embedding = umapper.fit_transform(embedding, y=y)
+        umap_embedding = embedding
 
     # TODO
     # mids = (umap_embedding.max(axis=0) + umap_embedding.min(axis=0)) / 2
@@ -172,7 +173,7 @@ def graphplot(
         print("Collating edge data for plotting...")
     rows = []
     if networkx:
-        for i, (pre, post) in enumerate(data.edges):
+        for i, (pre, post) in enumerate(network.edges):
             rows.append({"pre": pre, "post": post, "edge_idx": i})
     else:
         pre_inds, post_inds = np.nonzero(adj)
