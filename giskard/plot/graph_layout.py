@@ -16,6 +16,7 @@ from umap import UMAP
 from sklearn.preprocessing import normalize
 from sklearn.metrics import pairwise_distances
 import colorcet as cc
+import umap
 from adjustText import adjust_text
 
 
@@ -25,18 +26,19 @@ def graphplot(
     meta=None,
     transform="pass_to_ranks",
     embedding_algorithm="ase",
-    n_components=8,
-    n_neighbors=15,
+    n_components=32,
+    n_neighbors=32,
     min_dist=0.8,
     metric="cosine",
     hue=None,
     size="degree",
-    palette=None,
+    node_palette=None,
     ax=None,
     figsize=(10, 10),
-    sizes=(10, 20),
+    sizes=(10, 30),
     legend=False,
     edge_hue="pre",
+    edge_palette=None,
     edge_linewidth=0.2,
     edge_alpha=0.2,
     spines=False,
@@ -46,12 +48,18 @@ def graphplot(
     network_order=1,
     normalize_power=False,
     supervised_weight=False,
-    text_labels=False,
+    hue_labels=False,
+    hue_label_fontsize=None,
     adjust_labels=False,
+    return_results=False,
+    tile=False,
+    tile_layout=None,
     embed_kws={},
     umap_kws={},
     scatterplot_kws={},
 ):
+    results = {}
+
     networkx = False
     adj = import_graph(network)  # TODO allow for CSR
 
@@ -85,6 +93,8 @@ def graphplot(
         elif network_order == 1:
             embedding = embedder.fit_transform(adj)
 
+        results["embedding"] = embedding
+
     # if input is networkx, extract node metadata into a data frame
     if isinstance(network, (nx.Graph, nx.DiGraph)):
         networkx = True
@@ -116,22 +126,34 @@ def graphplot(
         else:
             y = None
         umap_embedding = umapper.fit_transform(embedding, y=y)
+        results["umap_embedding"] = umap_embedding
     else:
         umap_embedding = embedding
 
     # TODO
-    # mids = (umap_embedding.max(axis=0) + umap_embedding.min(axis=0)) / 2
-    # umap_embedding -= mids
-    # max_length = np.linalg.norm(umap_embedding, axis=1).max()
-    # umap_embedding /= max_length
+    mids = (umap_embedding.max(axis=0) + umap_embedding.min(axis=0)) / 2
+    umap_embedding -= mids
+    max_length = np.linalg.norm(umap_embedding, axis=1).max()
+    umap_embedding /= max_length
 
     # add the UMAP embedding into the dataframe for plotting
     columns = [f"umap_{i}" for i in range(umap_embedding.shape[1])]
     plot_df = pd.DataFrame(data=umap_embedding, columns=columns, index=meta.index)
     plot_df = pd.concat((plot_df, meta), axis=1, ignore_index=False)
-
     x_key = "umap_0"
     y_key = "umap_1"
+
+    if tile is not False:
+        tile_layout = np.array(tile_layout)
+        tile_layout = np.atleast_2d(tile_layout)
+        tile_groups = plot_df.groupby(tile)
+        for group, group_data in tile_groups:
+            group_index = group_data.index
+            inds = np.where(tile_layout == group)
+            plot_df.loc[group_index, x_key] += 2 * inds[1]
+            plot_df.loc[group_index, y_key] += 2 * inds[0]
+
+    results["plot_df"] = plot_df
 
     # TODO color mapping logic
     # if cmap == "husl":
@@ -139,13 +161,13 @@ def graphplot(
     # elif cmap == "glasbey":
     #     colors = cc.glasbey_light
     #     palette = dict(zip(plot_df[hue_key].unique(), colors))
-    if palette is None and hue is not None:
+    if node_palette is None and hue is not None:
         n_unique = meta[hue].nunique()
         if n_unique > 10:
             colors = cc.glasbey_light
         else:
-            colors = sns.color_palette("deep")
-        palette = dict(zip(meta[hue].unique(), colors))
+            colors = sns.color_palette("Set2")
+        node_palette = dict(zip(meta[hue].unique(), colors))
 
     if size == "degree":
         in_degree = np.asarray(adj.sum(axis=1))
@@ -165,7 +187,7 @@ def graphplot(
         ax=ax,
         hue=hue,
         size=size,
-        palette=palette,
+        palette=node_palette,
         sizes=sizes,
         **scatterplot_kws,
     )
@@ -202,7 +224,13 @@ def graphplot(
 
     if verbose > 0:
         print("Mapping edge data for plotting...")
-    edgelist["hue"] = edgelist[edge_hue].map(meta[hue])
+    if edge_hue == "prepost":
+        # TODO this isn't working yet
+        edgelist["prepost"] = list(zip(edgelist["pre"], edgelist["post"]))
+    if edge_palette is None:
+        edgelist["hue"] = edgelist[edge_hue].map(meta[hue])
+    else:
+        edgelist["hue"] = edgelist[edge_hue].map(edge_palette)
 
     pre_edgelist = edgelist.copy()
     post_edgelist = edgelist.copy()
@@ -220,7 +248,7 @@ def graphplot(
     pre_coords = list(zip(pre_edgelist["x"], pre_edgelist["y"]))
     post_coords = list(zip(post_edgelist["x"], post_edgelist["y"]))
     coords = list(zip(pre_coords, post_coords))
-    edge_colors = edgelist["hue"].map(palette)
+    edge_colors = edgelist["hue"].map(node_palette)
 
     if verbose > 0:
         print("Plotting edges...")
@@ -233,7 +261,9 @@ def graphplot(
     )
     ax.add_collection(lc)
 
-    if text_labels:
+    if hue_labels is not False:
+        if verbose > 0:
+            print("Labeling hue groups...")
         groupby = plot_df.groupby(hue)
         # centroids = groupby[[x_key, y_key]].mean()
         texts = []
@@ -242,20 +272,47 @@ def graphplot(
             pdists = pairwise_distances(points)
             medioid_ind = np.argmin(pdists.sum(axis=0))
             x, y = group.iloc[medioid_ind][[x_key, y_key]]
-            color = palette[label]
+            if hue_labels == "radial":
+                radial_scale = 1.02
+                vec = np.array((x, y))
+                norm = np.linalg.norm(vec)
+                vec *= radial_scale / norm
+                x, y = vec
+                if x < 0:
+                    ha = "right"
+                else:
+                    ha = "left"
+                if y < 0:
+                    va = "top"
+                else:
+                    va = "bottom"
+            if hue_labels == "medioid":
+                ha = "center"
+                va = "center"
+            color = node_palette[label]
             text = ax.text(
                 x,
                 y,
                 label,
-                ha="center",
-                va="center",
+                ha=ha,
+                va=va,
                 color=color,
                 fontweight="bold",
                 zorder=1000,
+                fontsize=hue_label_fontsize,
             )
             text.set_bbox(dict(facecolor="white", alpha=0.7, linewidth=0, pad=0.5))
             texts.append(text)
         if adjust_labels:
             # arrowprops=dict(arrowstyle="->", color="black")
-            adjust_text(texts, avoid_self=False)
-    return ax
+            if verbose > 0:
+                print("Adjusting hue labels for overlaps...")
+            # TODO doesn't seem like add_objects works here
+            # ax.set(xlim=(-1.5, 1.5), ylim=(-1.5, 1.5))
+            adjust_text(
+                texts, avoid_self=False, autoalign=False, add_objects=node_paths
+            )
+    if return_results:
+        return ax, results
+    else:
+        return ax
