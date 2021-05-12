@@ -14,8 +14,9 @@ from matplotlib.lines import Line2D
 from sklearn.decomposition import PCA
 from umap import UMAP
 from sklearn.preprocessing import normalize
-
+from sklearn.metrics import pairwise_distances
 import colorcet as cc
+from adjustText import adjust_text
 
 
 def graphplot(
@@ -44,6 +45,8 @@ def graphplot(
     network_order=1,
     normalize_power=False,
     supervised_weight=False,
+    text_labels=False,
+    adjust_labels=False,
     embed_kws={},
     umap_kws={},
     scatterplot_kws={},
@@ -157,6 +160,7 @@ def graphplot(
         sizes=sizes,
         **scatterplot_kws,
     )
+    node_paths = ax.get_children()
     ax.set(xlabel="", ylabel="", xticks=[], yticks=[])
     if not spines:
         for side in ["left", "right", "top", "bottom"]:
@@ -219,4 +223,30 @@ def graphplot(
         zorder=0,
     )
     ax.add_collection(lc)
+
+    if text_labels:
+        groupby = plot_df.groupby(hue)
+        # centroids = groupby[[x_key, y_key]].mean()
+        texts = []
+        for label, group in groupby:
+            points = group[[x_key, y_key]]
+            pdists = pairwise_distances(points)
+            medioid_ind = np.argmin(pdists.sum(axis=0))
+            x, y = group.iloc[medioid_ind][[x_key, y_key]]
+            color = palette[label]
+            text = ax.text(
+                x,
+                y,
+                label,
+                ha="center",
+                va="center",
+                color=color,
+                fontweight="bold",
+                zorder=1000,
+            )
+            text.set_bbox(dict(facecolor="white", alpha=0.7, linewidth=0, pad=0.5))
+            texts.append(text)
+        if adjust_labels:
+            # arrowprops=dict(arrowstyle="->", color="black")
+            adjust_text(texts, avoid_self=False)
     return ax
