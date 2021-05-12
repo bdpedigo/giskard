@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from graspologic.embed import AdjacencySpectralEmbed, LaplacianSpectralEmbed
-from graspologic.utils import import_graph
+from graspologic.utils import import_graph, pass_to_ranks
 from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from sklearn.decomposition import PCA
@@ -22,6 +22,7 @@ def graphplot(
     network=None,
     embedding=None,
     meta=None,
+    transform="pass_to_ranks",
     embedding_algorithm="ase",
     n_components=8,
     n_neighbors=15,
@@ -50,8 +51,15 @@ def graphplot(
 ):
     networkx = False
     adj = import_graph(network)  # TODO allow for CSR
+
     if random_state is None:
         random_state = np.random.default_rng()
+    elif isinstance(random_state, (int, np.integer)):
+        random_state = np.random.default_rng(random_state)
+
+    if transform == "pass_to_ranks":
+        adj = pass_to_ranks(adj)
+
     if embedding is None:
         # if we are given a graph, do an initial embedding
 
