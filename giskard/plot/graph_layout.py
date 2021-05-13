@@ -309,8 +309,11 @@ def graphplot(
                 print("Adjusting hue labels for overlaps...")
             # TODO doesn't seem like add_objects works here
             # ax.set(xlim=(-1.5, 1.5), ylim=(-1.5, 1.5))
+            # add_objects=node_paths
             adjust_text(
-                texts, avoid_self=False, autoalign=False, add_objects=node_paths
+                texts,
+                avoid_self=False,
+                autoalign=False,
             )
     if return_results:
         return ax, results
