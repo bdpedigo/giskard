@@ -1,6 +1,7 @@
 # %%
 import os
 from pathlib import Path
+from re import A
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -17,6 +18,7 @@ from sklearn.preprocessing import normalize
 from sklearn.metrics import pairwise_distances
 import colorcet as cc
 from adjustText import adjust_text
+from scipy.spatial import convex_hull_plot_2d, ConvexHull
 
 
 def graphplot(
@@ -29,6 +31,8 @@ def graphplot(
     min_dist=0.8,
     metric="cosine",
     hue=None,
+    group="hue",
+    group_convex_hull=False,
     size="degree",
     palette=None,
     ax=None,
@@ -103,7 +107,9 @@ def graphplot(
             **umap_kws,
         )
         if supervised_weight > 0:
-            y = meta[hue].values
+            if group == "hue":
+                group = hue
+            y = meta[group].values
             _, y = np.unique(y, return_inverse=True)
         else:
             y = None
@@ -168,6 +174,23 @@ def graphplot(
             ax.spines[side].set_visible(False)
     if not legend:
         ax.get_legend().remove()
+
+    if group_convex_hull:
+        groups = plot_df.groupby(group)
+        for name, group_data in groups:
+            points = group_data[[x_key, y_key]].values
+            convex_hull = ConvexHull(points)
+            print(name)
+            ax.fill(
+                points[convex_hull.vertices, 0],
+                points[convex_hull.vertices, 1],
+                "k",
+                alpha=0.2,
+                zorder=-1,
+                linewidth=3,
+                # linecolor="k",
+                fill=False
+            )
 
     if verbose > 0:
         print("Collating edge data for plotting...")
