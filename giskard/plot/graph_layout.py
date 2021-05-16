@@ -89,6 +89,8 @@ def graphplot(
                 form="R-DAD", n_components=n_components, concat=True, **embed_kws
             )
         if network_order == 2:
+            # TODO not sure how much this makes sense in practice, just something I've
+            # been playing around with
             if normalize_power:
                 adj_normed = normalize(adj, axis=1)
                 embedding = embedder.fit_transform(adj_normed @ adj_normed)
