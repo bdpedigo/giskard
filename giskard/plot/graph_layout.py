@@ -210,7 +210,6 @@ def graphplot(
         for name, group_data in groups:
             points = group_data[[x_key, y_key]].values
             convex_hull = ConvexHull(points)
-            print(name)
             ax.fill(
                 points[convex_hull.vertices, 0],
                 points[convex_hull.vertices, 1],
@@ -219,7 +218,7 @@ def graphplot(
                 zorder=-1,
                 linewidth=3,
                 # linecolor="k",
-                fill=False
+                fill=False,
             )
 
     if verbose > 0:
@@ -297,6 +296,7 @@ def graphplot(
             x, y = group.iloc[medioid_ind][[x_key, y_key]]
             if hue_labels == "radial":
                 radial_scale = 1.02
+                # radial_scale = 1.1
                 vec = np.array((x, y))
                 norm = np.linalg.norm(vec)
                 vec *= radial_scale / norm
