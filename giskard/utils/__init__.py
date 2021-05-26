@@ -1,4 +1,4 @@
-from .utils import careys_rule, powerset
+from .utils import careys_rule, powerset, timer
 from .wrangle import (
     get_paired_inds,
     get_paired_subgraphs,
