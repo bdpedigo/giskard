@@ -1,6 +1,6 @@
 import numpy as np
 from itertools import chain, combinations
-
+from functools import wraps
 
 def careys_rule(X):
     """Get the number of singular values to check"""
@@ -14,3 +14,16 @@ def powerset(iterable, ignore_empty=True):
     return list(
         chain.from_iterable(combinations(s, r) for r in range(ignore_empty, len(s) + 1))
     )
+
+
+def timer(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time()
+        result = f(*args, **kw)
+        te = time()
+        sec = te - ts
+        output = f"Function {f.__name__} took {sec:.3f} seconds."
+        print(output)
+        return result
+    return wrap
