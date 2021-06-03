@@ -67,8 +67,8 @@ def set_theme(
             "text.color": text_color,
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
-            "font.family": "sans-serif",
-            "font.sans-serif": ["Arial"],
+            # "font.family": "sans-serif",
+            # "font.sans-serif": ["Arial"],
             "xtick.major.size": tick_size,
             "ytick.major.size": tick_size,
         }
