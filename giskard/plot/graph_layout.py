@@ -110,7 +110,8 @@ def graphplot(
             if attr is not None:
                 attr_map = nx.get_node_attributes(network, attr)
                 meta[attr] = meta.index.map(attr_map)
-
+    elif meta is None: 
+        meta = pd.DataFrame(index=range(network.shape[0]))
     index = meta.index
 
     if embedding.shape[1] > 2:
@@ -180,7 +181,7 @@ def graphplot(
     if size == "degree":
         in_degree = np.asarray(adj.sum(axis=1))
         out_degree = np.asarray(adj.sum(axis=0))
-        degree = in_degree + out_degree
+        degree = np.squeeze(in_degree) + np.squeeze(out_degree)
         plot_df["degree"] = degree
 
     if ax is None:
