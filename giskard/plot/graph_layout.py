@@ -65,7 +65,7 @@ def graphplot(
     results = {}
 
     networkx = False
-    adj = import_graph(network)  # TODO allow for CSR
+    adj = import_graph(network).copy()  # TODO allow for CSR
 
     if random_state is None:
         random_state = np.random.default_rng()
