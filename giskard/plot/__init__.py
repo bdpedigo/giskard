@@ -13,3 +13,4 @@ from .utils import soft_axis_off, axis_on, legend_upper_right, merge_axes
 from .graph_layout import graphplot
 from .confusion import confusionplot
 from .matrixgrid import MatrixGrid
+from .theme import set_theme
