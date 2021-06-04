@@ -1,6 +1,8 @@
 import numpy as np
 from itertools import chain, combinations
 from functools import wraps
+import time
+
 
 def careys_rule(X):
     """Get the number of singular values to check"""
@@ -26,4 +28,5 @@ def timer(f):
         output = f"Function {f.__name__} took {sec:.3f} seconds."
         print(output)
         return result
+
     return wrap
