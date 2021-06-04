@@ -108,7 +108,7 @@ def crosstabplot(
             if group_order_aggfunc == "mean":
                 group_order_aggfunc = pd.Series.mean
             elif group_order_aggfunc == "mode":
-                group_order_aggfunc = lambda x: x.mode(x)[0]
+                group_order_aggfunc = pd.Series.mode
 
             group_order = (
                 data.groupby(group)[group_order]
