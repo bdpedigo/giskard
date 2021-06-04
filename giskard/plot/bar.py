@@ -89,6 +89,7 @@ def crosstabplot(
     data: pd.DataFrame,
     group=None,
     group_order=None,
+    group_order_aggfunc="mean",
     hue=None,
     hue_order=None,
     normalize=False,
@@ -103,9 +104,14 @@ def crosstabplot(
     counts_by_group = pd.crosstab(data[group], data[hue])
     if group_order is not None:
         if isinstance(group_order, str):
+            if group_order_aggfunc == "mean":
+                group_order_aggfunc = pd.Series.mean
+            elif group_order_aggfunc == "mode":
+                group_order_aggfunc = lambda x: x.mode(x)[0]
+
             group_order = (
                 data.groupby(group)[group_order]
-                .mean()
+                .agg(group_order_aggfunc)
                 .sort_values(ascending=False)
                 .index
             )
