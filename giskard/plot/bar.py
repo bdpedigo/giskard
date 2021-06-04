@@ -90,6 +90,7 @@ def crosstabplot(
     group=None,
     group_order=None,
     group_order_aggfunc="mean",
+    group_order_ascending=False,
     hue=None,
     hue_order=None,
     normalize=False,
@@ -112,7 +113,7 @@ def crosstabplot(
             group_order = (
                 data.groupby(group)[group_order]
                 .agg(group_order_aggfunc)
-                .sort_values(ascending=False)
+                .sort_values(ascending=group_order_ascending)
                 .index
             )
         elif isinstance(group_order, list):
