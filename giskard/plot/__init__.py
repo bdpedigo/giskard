@@ -14,3 +14,4 @@ from .graph_layout import graphplot
 from .confusion import confusionplot
 from .matrixgrid import MatrixGrid
 from .theme import set_theme
+from .tree import plot_dendrogram
