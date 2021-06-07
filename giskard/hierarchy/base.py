@@ -83,6 +83,9 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
         """
         pass
 
+    def flatten_labels(self, level=None):
+        pass
+
     def _hierarchical_mean(self, key):
         # TODO more generally, I think there's a place for "hierarchical agg"
         if self.is_leaf:
