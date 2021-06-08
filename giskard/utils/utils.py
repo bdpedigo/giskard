@@ -21,9 +21,9 @@ def powerset(iterable, ignore_empty=True):
 def timer(f):
     @wraps(f)
     def wrap(*args, **kw):
-        ts = time()
+        ts = time.time()
         result = f(*args, **kw)
-        te = time()
+        te = time.time()
         sec = te - ts
         output = f"Function {f.__name__} took {sec:.3f} seconds."
         print(output)
