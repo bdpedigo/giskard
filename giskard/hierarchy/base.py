@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from graspologic.plot import heatmap
 
 import numpy as np
 import pandas as pd
@@ -8,15 +7,11 @@ from sklearn.base import BaseEstimator
 
 
 class BaseNetworkTree(NodeMixin, BaseEstimator):
-    def __init__(
-        self,
-        min_split=32,
-        max_levels=2,
-        verbose=False,
-    ):
+    def __init__(self, min_split=32, max_levels=2, verbose=False, loops=False):
         self.min_split = min_split
         self.max_levels = max_levels
         self.verbose = verbose
+        self.loops = loops
 
     @property
     def node_data(self):
@@ -98,16 +93,6 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
             child_vars = [child._hierarchical_mean(key) for child in children]
             return np.mean(child_vars)
 
-    # def old_estimate_parameters(self, adjacency):
-    #     # TODO this could be generalized e.g. find the mean edge weight instead of count
-    #     # nonzeros
-    #     for tree_node in PreOrderIter(self):
-    #         a_index = tree_node.node_data["adjacency_index"]
-
-    #         # TODO for non-root nodes somehow I think we need to balance p because
-    #         # otherwise we are double counting edges when we sum up
-    #         tree_node.probability_estimate_ = probability_estimate
-
     def estimate_parameters(self, adjacency):
         # blah blah blah
         self._estimate_parameters(adjacency)
@@ -117,6 +102,8 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
         if isinstance(adjacency, np.ndarray):
             probability_estimate = np.count_nonzero(adjacency) / adjacency.shape[0]
         else:
+            # I had a hunch the .count_nonzero method might be faster than the numpy
+            # function but I could be totally wrong
             probability_estimate = adjacency.count_nonzero() / adjacency.shape[0]
         return probability_estimate
 
@@ -125,21 +112,20 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
         indices = self.node_data["adjacency_index"]
         mask_arr[indices] = True
         mask = mask_arr[:, None] & mask_arr[None, :]
-        if self.is_leaf:
-            pass
-            # TODO somehow deal with loops
+        if self.is_leaf and not self.loops:
+            mask[indices, indices] = False
         else:
             counted = mask.copy()
             for child in self.children:
                 child_mask = child._estimate_parameters(adjacency)
                 mask[child_mask] = False
                 counted[child_mask] = True
-        heatmap(mask)
         probability_estimate = self._aggregate_edges(adjacency[mask])
         self.probability_estimate_ = probability_estimate
-        if self.is_leaf: 
-            return mask 
-        else: 
+        if self.is_leaf and not self.loops:
+            mask[indices, indices] = True
+            return mask
+        else:
             return counted
 
     @property
@@ -161,6 +147,7 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
         return probability_matrix
 
     # @property
+    # TODO need some way of naming things
     # def condensed_probability_matrix(self):
     #     n = len(self.descendants) + 1
     #     data = np.empty((n, n))
