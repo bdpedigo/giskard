@@ -67,3 +67,8 @@ def plot_dendrogram(
             ax.axhline(cut - 1, linewidth=1, color="grey", linestyle=":")
 
     ax.axis("off")
+
+
+# TODO bar dendrogram
+
+# TODO treeplot

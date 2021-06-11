@@ -56,19 +56,19 @@ class MatrixGrid:
 
     @property
     def all_top_axs(self):
-        return [self.ax] + [self.top_axs]
+        return [self.ax] + self.top_axs
 
     @property
     def all_bottom_axs(self):
-        return [self.ax] + [self.bottom_axs]
+        return [self.ax] + self.bottom_axs
 
     @property
     def all_left_axs(self):
-        return [self.ax] + [self.left_axs]
+        return [self.ax] + self.left_axs
 
     @property
     def all_right_axs(self):
-        return [self.ax] + [self.right_axs]
+        return [self.ax] + self.right_axs
 
     def append_axes(self, side, size="10%", pad=0):
         kws = {}
