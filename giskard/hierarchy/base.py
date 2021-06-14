@@ -163,19 +163,24 @@ def _get_nearest_common_ancestor(source, target):
 
 
 class MetaTree(BaseNetworkTree):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, min_split=32, max_levels=2, verbose=False, loops=False):
+        super().__init__(
+            min_split=min_split, max_levels=max_levels, verbose=verbose, loops=loops
+        )
 
-    def build(self, node_data, prefix):
+    def _check_continue_splitting(self):
+        return len(self._index) >= self.min_split and self.depth < self.max_levels
+
+    def build(self, node_data, prefix="", postfix=""):
         if self.is_root and ("adjacency_index" not in node_data.columns):
             node_data = node_data.copy()
             node_data["adjacency_index"] = range(len(node_data))
         self._index = node_data.index
         self._node_data = node_data
-        key = prefix + f"{self.depth}"
-        if key in node_data:
+        key = prefix + f"{self.depth}" + postfix
+        if key in node_data and self._check_continue_splitting():
             groups = node_data.groupby(key)
             for name, group in groups:
                 child = MetaTree()
                 child.parent = self
-                child.build(group, prefix)
+                child.build(group, prefix=prefix, postfix=postfix)
