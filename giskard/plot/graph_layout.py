@@ -1,25 +1,18 @@
 # %%
-import os
-from pathlib import Path
-from re import A
-
+import colorcet as cc
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from adjustText import adjust_text
 from graspologic.embed import AdjacencySpectralEmbed, LaplacianSpectralEmbed
 from graspologic.utils import import_graph, pass_to_ranks
 from matplotlib.collections import LineCollection
-from matplotlib.lines import Line2D
-from sklearn.decomposition import PCA
-from umap import UMAP
-from sklearn.preprocessing import normalize
+from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
-import colorcet as cc
-import umap
-from adjustText import adjust_text
-from scipy.spatial import convex_hull_plot_2d, ConvexHull
+from sklearn.preprocessing import normalize
+from umap import UMAP
 
 
 def graphplot(
@@ -110,7 +103,7 @@ def graphplot(
             if attr is not None:
                 attr_map = nx.get_node_attributes(network, attr)
                 meta[attr] = meta.index.map(attr_map)
-    elif meta is None: 
+    elif meta is None:
         meta = pd.DataFrame(index=range(network.shape[0]))
     index = meta.index
 
@@ -164,7 +157,7 @@ def graphplot(
 
     results["plot_df"] = plot_df
 
-    # TODO color mapping logic
+    # TODO replace with generic color mapping logic
     # if cmap == "husl":
     #     colors = sns.color_palette("husl", plot_df[hue_key].nunique())
     # elif cmap == "glasbey":
