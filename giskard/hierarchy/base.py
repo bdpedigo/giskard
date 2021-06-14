@@ -160,3 +160,22 @@ def _get_nearest_common_ancestor(source, target):
     walker = Walker()
     _, nearest_common_ancestor, _ = walker.walk(source, target)
     return nearest_common_ancestor
+
+
+class MetaTree(BaseNetworkTree):
+    def __init__(self):
+        super().__init__()
+
+    def build(self, node_data, prefix):
+        if self.is_root and ("adjacency_index" not in node_data.columns):
+            node_data = node_data.copy()
+            node_data["adjacency_index"] = range(len(node_data))
+        self._index = node_data.index
+        self._node_data = node_data
+        key = prefix + f"{self.depth}"
+        if key in node_data:
+            groups = node_data.groupby(key)
+            for name, group in groups:
+                child = MetaTree()
+                child.parent = self
+                child.build(group, prefix)
