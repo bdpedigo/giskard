@@ -183,4 +183,5 @@ class MetaTree(BaseNetworkTree):
             for name, group in groups:
                 child = MetaTree()
                 child.parent = self
+                child._index = group.index
                 child.build(group, prefix=prefix, postfix=postfix)
