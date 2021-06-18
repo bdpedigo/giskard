@@ -23,10 +23,12 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
     def fit(self, adjacency, node_data=None):
         self._check_node_data(adjacency, node_data)
 
+        partition_labels = self._fit_partition(adjacency)  # TODO whether to do prior or
+        # after the check_continue_splitting
         if self._check_continue_splitting(adjacency):
             if self.verbose > 0:
                 print(f"{self._get_message_header(adjacency)} Splitting subgraph...")
-            partition_labels = self._fit_partition(adjacency)
+
             self._split(adjacency, partition_labels)
 
         return self
