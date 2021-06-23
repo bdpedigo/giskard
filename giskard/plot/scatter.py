@@ -1,11 +1,14 @@
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from umap import UMAP
+
 from graspologic.embed import select_dimension
-from .utils import soft_axis_off
-import warnings
+
+from .utils import legend_upper_right, soft_axis_off
 
 
 def simple_scatterplot(
@@ -19,12 +22,11 @@ def simple_scatterplot(
     s=15,
     alpha=0.7,
     linewidth=0,
-    **kwargs
+    spines_off=True,
+    **kwargs,
 ):
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=figsize)
-    ax.spines["left"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
     plot_df = pd.DataFrame(data=X[:, :2], columns=["0", "1"])
     plot_df["labels"] = labels
     sns.scatterplot(
@@ -40,8 +42,13 @@ def simple_scatterplot(
         **kwargs,
     )
     ax.set(title=title)
-    soft_axis_off(ax)
-    ax.get_legend().remove()
+    if spines_off:
+        soft_axis_off(ax, top=False, bottom=False, right=False, left=False)
+    else:
+        soft_axis_off(ax, top=False, bottom=True, right=False, left=True)
+    leg = ax.get_legend()
+    if leg is not None:
+        leg.remove()
     if legend:
         # convenient default that I often use, places in the top right outside of plot
         ax.legend(bbox_to_anchor=(1, 1), loc="upper left")
@@ -101,7 +108,14 @@ def textplot(x, y, text, ax=None, x_pad=0, y_pad=0, **kwargs):
 
 
 def screeplot(
-    singular_values, check_n_components=None, ax=None, title="Screeplot", n_elbows=4
+    singular_values,
+    check_n_components=None,
+    ax=None,
+    title="Screeplot",
+    n_elbows=4,
+    label_elbows=True,
+    label=None,
+    **kwargs,
 ):
     if ax is None:
         ax = plt.gca()
@@ -112,7 +126,7 @@ def screeplot(
 
     index = np.arange(1, len(singular_values) + 1)
 
-    sns.lineplot(x=index, y=singular_values, ax=ax, zorder=1)
+    sns.lineplot(x=index, y=singular_values, ax=ax, zorder=1, label=label, **kwargs)
     sns.scatterplot(
         x=elbows,
         y=elbow_vals,
@@ -123,17 +137,94 @@ def screeplot(
         s=80,
         linewidth=2,
     )
-    textplot(
-        elbows,
-        elbow_vals,
-        elbows,
-        ax=ax,
-        color="darkred",
-        fontsize="small",
-        x_pad=0.5,
-        y_pad=0,
-        zorder=3,
-    )
+    if label_elbows:
+        textplot(
+            elbows,
+            elbow_vals,
+            elbows,
+            ax=ax,
+            color="darkred",
+            fontsize="small",
+            x_pad=0.5,
+            y_pad=0,
+            zorder=3,
+        )
     ax.set(title=title, xlabel="Index", ylabel="Singular value")
     ax.yaxis.set_major_locator(plt.MaxNLocator(3))
+    return ax
+
+
+def matched_stripplot(
+    data,
+    x=None,
+    y=None,
+    jitter=0.2,
+    hue=None,
+    match=None,
+    ax=None,
+    matchline_kws=None,
+    **kwargs,
+):
+    data = data.copy()
+    if ax is None:
+        ax = plt.gca()
+
+    unique_x_var = data[x].unique()
+    ind_map = dict(zip(unique_x_var, range(len(unique_x_var))))
+    data["x"] = data[x].map(ind_map)
+    data["x"] += np.random.uniform(-jitter, jitter, len(data))
+
+    sns.scatterplot(data=data, x="x", y=y, hue=hue, ax=ax, zorder=1, **kwargs)
+
+    if match is not None:
+        unique_match_var = data[match].unique()
+        fake_palette = dict(zip(unique_match_var, len(unique_match_var) * ["black"]))
+        if matchline_kws is None:
+            matchline_kws = dict(alpha=0.2, linewidth=1)
+        sns.lineplot(
+            data=data,
+            x="x",
+            y=y,
+            hue=match,
+            ax=ax,
+            legend=False,
+            palette=fake_palette,
+            zorder=-1,
+            **matchline_kws,
+        )
+    ax.set(xlabel=x, xticks=np.arange(len(unique_x_var)), xticklabels=unique_x_var)
+    ax.get_legend().remove()
+    return ax
+
+
+def scatterplot(
+    data,
+    x=None,
+    y=None,
+    hue=None,
+    shift=None,
+    shift_bounds=(-0.1, 0.1),
+    ax=None,
+    shade=False,
+    **kwargs,
+):
+    if ax is None:
+        _, ax = plt.subplots(1, 1, figsize=(8, 6))
+    data = data.copy()
+    data["x_shift"] = data[x]
+    if shift is not None:
+        groups = data.groupby(shift, sort=False)
+        shifts = np.linspace(shift_bounds[0], shift_bounds[1], len(groups))
+        shifts = dict(zip(groups.groups.keys(), shifts))
+        for group_key, group_data in groups:
+            data.loc[group_data.index, "x_shift"] += shifts[group_key]
+    sns.scatterplot(data=data, x="x_shift", y=y, hue=hue, ax=ax, **kwargs)
+    ax.set_xlabel(x)
+    start = int(data[x].unique().min())
+    stop = int(data[x].unique().max())
+    if shade > 0:
+        # xlim = ax.get_xlim()
+        for x in np.arange(start, stop + 1, 2):
+            ax.axvspan(x - 0.5, x + 0.5, color="lightgrey", alpha=0.2, linewidth=0)
+    legend_upper_right(ax)
     return ax
