@@ -23,7 +23,7 @@ class LeidenTree(BaseNetworkTree):
     def _fit_partition(self, adjacency):
         """Fits a partition to the current subgraph using Leiden"""
         partition_map = leiden(adjacency, trials=self.trials)
-        partition_labels = np.vectorize(partition_map.get)(
+        partition_labels = np.vectorize(partition_map.__getitem__)(
             np.arange(adjacency.shape[0])
         )
         return partition_labels
