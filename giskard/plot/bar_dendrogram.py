@@ -1,167 +1,225 @@
+import colorcet as cc
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from anytree import LevelGroupOrderIter, NodeMixin, PreOrderIter
+from sklearn.base import BaseEstimator
+
+from .bar import stacked_barplot
+from .utils import soft_axis_off
 
 
-def dendrogram_barplot(data):
-    pass
+class MetaTree(NodeMixin, BaseEstimator):
+    def __init__(self, min_split=0, max_levels=np.inf, verbose=False):
+        self.min_split = min_split
+        self.max_levels = max_levels
+        self.verbose = verbose
+
+    @property
+    def node_data(self):
+        if self.is_root:
+            return self._node_data
+        else:
+            return self.root.node_data.loc[self._index]
+
+    @property
+    def size(self):
+        return len(self._index)
+
+    def _check_node_data(self, adjacency, node_data=None):
+        if node_data is None and self.is_root:
+            node_data = pd.DataFrame(index=range(adjacency.shape[0]))
+        if self.is_root:
+            self._node_data = node_data
+            self._index = node_data.index
+
+    def flatten_labels(self, level=None):
+        pass
+
+    def _hierarchical_mean(self, key):
+        if self.is_leaf:
+            index = self.node_data.index
+            var = self.root.node_data.loc[index, key]
+            return np.mean(var)
+        else:
+            children = self.children
+            child_vars = [child._hierarchical_mean(key) for child in children]
+            return np.mean(child_vars)
+
+    def _hierarchical_mean_attribute(self, key):
+        if self.is_leaf:
+            return self.__getattribute__(key)
+        else:
+            children = self.children
+            child_vars = [child._hierarchical_mean_attribute(key) for child in children]
+            return np.mean(child_vars)
+
+    def _check_continue_splitting(self):
+        return len(self._index) >= self.min_split and self.depth < self.max_levels
+
+    def build(self, node_data, prefix="", postfix=""):
+        # if self.is_root and ("adjacency_index" not in node_data.columns):
+        #     node_data = node_data.copy()
+        #     node_data["adjacency_index"] = range(len(node_data))
+        self._index = node_data.index
+        self._node_data = node_data
+        key = prefix + f"{self.depth}" + postfix
+        if key in node_data.columns and self._check_continue_splitting():
+            groups = node_data.groupby(key)
+            for _, group_data in groups:
+                child = MetaTree()
+                child.parent = self
+                child._index = group_data.index
+                child.build(group_data, prefix=prefix, postfix=postfix)
+
+    def order(self, order):
+        for node in PreOrderIter(self):
+            if not node.is_leaf:
+                children = np.array(node.children)
+                children_data = [n.node_data for n in children]
+                priority_values = []
+                for child_data in children_data:
+                    val = child_data[order].mean()
+                    priority_values.append(val)
+                inds = np.argsort(priority_values)
+                node.children = tuple(children[inds])
+
+    def sort_values(self, by, *args, **kwargs):
+        kwargs["inplace"] = True
+        self.node_data.sort_values(by, *args, **kwargs)
 
 
-def plot_single_dendrogram(meta, axs):
-    n_leaf = meta[f"lvl{lowest_level}_labels"].nunique()
-    # n_pairs = len(full_meta) // 2
-    n_cells = len(meta)
+# def _dendrogram_leaf_aligned(tree):
+# TODO
 
-    first_mid_map = get_mid_map(full_meta, bilat=True)
-
-    # left side
-    # meta = full_meta[full_meta["hemisphere"] == "L"].copy()
-    ax = axs[0]
-    ax.set_ylim((-gap, (n_cells + gap * n_leaf)))
-    ax.set_xlim((-0.5, lowest_level + 2 + 0.5))
-
-    draw_bar_dendrogram(meta, ax, first_mid_map)
-
-    ax.set_yticks([])
-    ax.set_xticks(np.arange(lowest_level + 1))
-    ax.tick_params(axis="both", which="both", length=0)
-    ax.spines["left"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.set_xlabel("Level")
-
-    # add a scale bar in the bottom left
-    ax.bar(x=0, height=100, bottom=0, width=width, color="k")
-    ax.text(x=0.35, y=0, s="100 neurons")
-
-    # ax = axs[1]
-    # plot_color_labels(full_meta, ax)
+# def _dendrogram_repeated(tree):
+# TODO
 
 
-def get_mid_map(full_meta, leaf_key=None, bilat=False):
-    if leaf_key is None:
-        leaf_key = f"lvl{lowest_level}_labels"
-    # left
-    if not bilat:
-        meta = full_meta[full_meta["hemisphere"] == "L"].copy()
-    else:
-        meta = full_meta.copy()
-
-    sizes = meta.groupby([leaf_key, "merge_class"], sort=False).size()
-
-    uni_labels = sizes.index.unique(0)
-
-    mids = []
-    offset = 0
-    for ul in uni_labels:
-        heights = sizes.loc[ul]
-        starts = heights.cumsum() - heights + offset
-        offset += heights.sum() + gap
-        minimum = starts[0]
-        maximum = starts[-1] + heights[-1]
-        mid = (minimum + maximum) / 2
-        mids.append(mid)
-
-    left_mid_map = dict(zip(uni_labels, mids))
-    if bilat:
-        first_mid_map = {}
-        for k in left_mid_map.keys():
-            left_mid = left_mid_map[k]
-            first_mid_map[k + "-"] = left_mid
-        return first_mid_map
-
-    # right
-    meta = full_meta[full_meta["hemisphere"] == "R"].copy()
-
-    sizes = meta.groupby([leaf_key, "merge_class"], sort=False).size()
-
-    # uni_labels = np.unique(labels)
-    uni_labels = sizes.index.unique(0)
-
-    mids = []
-    offset = 0
-    for ul in uni_labels:
-        heights = sizes.loc[ul]
-        starts = heights.cumsum() - heights + offset
-        offset += heights.sum() + gap
-        minimum = starts[0]
-        maximum = starts[-1] + heights[-1]
-        mid = (minimum + maximum) / 2
-        mids.append(mid)
-
-    right_mid_map = dict(zip(uni_labels, mids))
-
-    keys = list(set(list(left_mid_map.keys()) + list(right_mid_map.keys())))
-    first_mid_map = {}
-    for k in keys:
-        left_mid = left_mid_map[k]
-        right_mid = right_mid_map[k]
-        first_mid_map[k + "-"] = max(left_mid, right_mid)
-    return first_mid_map
-
-
-def draw_bar_dendrogram(
-    meta,
-    ax,
-    first_mid_map,
-    lowest_level=7,
-    width=0.5,
-    draw_labels=False,
-    color_key="merge_class",
-    color_order="sf",
+def _dendrogram_root_aligned(
+    tree, ax, hue=None, orient="h", palette=None, hue_order_index=None, thickness=0.5
 ):
-    meta = meta.copy()
-    last_mid_map = first_mid_map
-    line_kws = dict(linewidth=1, color="k")
-    for level in np.arange(lowest_level + 1)[::-1]:
-        x = level
-        # mean_in_cluster = meta.groupby([f"lvl{level}_labels", color_key])["sf"].mean()
-        meta = meta.sort_values(
-            [f"lvl{level}_labels", f"{color_key}_{color_order}_order", color_key],
-            ascending=True,
-        )
-        sizes = meta.groupby([f"lvl{level}_labels", color_key], sort=False).size()
+    for i, group in enumerate(LevelGroupOrderIter(tree)):
+        for node in group:
+            center = node._hierarchical_mean_attribute("center_span")
+            node.center_span = center
+            node.center_extent = i
+            counts = node.node_data[hue].value_counts()
+            counts = counts.reindex(hue_order_index).dropna()
+            start = center - node.size / 2
+            stacked_barplot(
+                counts,
+                center=i,
+                start=start,
+                orient=orient,
+                ax=ax,
+                palette=palette,
+                thickness=thickness,
+            )
 
-        uni_labels = sizes.index.unique(level=0)  # these need to be in the right order
 
-        mids = []
-        for ul in uni_labels:
-            if not isinstance(ul, str):
-                ul = str(ul)  # HACK
-            last_mids = get_last_mids(ul, last_mid_map)
-            grand_mid = np.mean(last_mids)
+def get_x_y(xs, ys, orient):
+    if orient == "h":
+        return xs, ys
+    elif orient == "v":
+        return (ys, xs)
 
-            heights, starts, colors = calc_bar_params(sizes, ul, grand_mid)
 
-            minimum = starts[0]
-            maximum = starts[-1] + heights[-1]
-            mid = (minimum + maximum) / 2
-            mids.append(mid)
+def _draw_line(spans, extents, ax=None, orient="h", linewidth=1, color="black"):
+    xs, ys = get_x_y(spans, extents, orient=orient)
+    ax.plot(xs, ys, linewidth=linewidth, color=color, alpha=1)
 
-            # draw the bars
-            for i in range(len(heights)):
-                ax.bar(
-                    x=x,
-                    height=heights[i],
-                    width=width,
-                    bottom=starts[i],
-                    color=colors[i],
-                )
-                if (level == lowest_level) and draw_labels:
-                    ax.text(
-                        x=lowest_level + 0.5, y=mid, s=ul, verticalalignment="center"
-                    )
 
-            # draw a horizontal line from the middle of this bar
-            if level != 0:  # dont plot dash on the last
-                ax.plot([x - 0.5 * width, x - width], [mid, mid], **line_kws)
+def _draw_connector_lines(tree, orient="h", linewidth=1, ax=None, thickness=0.5):
+    for node in PreOrderIter(tree):
+        if not node.is_leaf:
+            children = node.children
+            min_span = min([child.center_span for child in children])
+            max_span = max([child.center_span for child in children])
+            mean_span = (min_span + max_span) / 2
+            current_bottom = node.center_extent + thickness / 2
+            next_top = node.center_extent + 1 - thickness / 2
+            middle = (current_bottom + next_top) / 2
 
-            # line connecting to children clusters
-            if level != lowest_level:  # don't plot first dash
-                ax.plot(
-                    [x + 0.5 * width, x + width], [grand_mid, grand_mid], **line_kws
-                )
+            spans = [mean_span, mean_span]
+            extents = [current_bottom, middle]
+            _draw_line(spans, extents, ax=ax, orient=orient)
 
-            # draw a vertical line connecting the two child clusters
-            if len(last_mids) == 2:
-                ax.plot([x + width, x + width], last_mids, **line_kws)
+            spans = [min_span, max_span]
+            extents = [middle, middle]
+            _draw_line(spans, extents, ax=ax, orient=orient)
 
-        last_mid_map = dict(zip(uni_labels, mids))
-    remove_spines(ax)
+            extents = [middle, next_top]
+            for child in children:
+                spans = [child.center_span, child.center_span]
+                _draw_line(spans, extents, ax=ax, orient=orient)
+
+
+def dendrogram_barplot(
+    data,
+    group=None,
+    hue=None,
+    group_order=None,
+    hue_order=None,
+    max_levels=np.inf,
+    align="root",
+    min_split=0,
+    orient="h",
+    pad=10,
+    ax=None,
+    figsize=(10, 2),
+    palette=None,
+    thickness=0.5,
+):
+    data = data.copy()
+
+    # if group_order is not None:
+    #     group_order_vals = data.groupby()[group_order].mean()
+    #     group_order_vals = group_order_vals.sort_values()
+    #     group_order_cat = pd.Categorical(
+    #         data[group], categories=group_order_vals, ordered=True
+    #     )
+    #     data['_group'] = group_order_cat
+    #     data.sort_values('_group', inplace=True)
+
+    tree = MetaTree(min_split=min_split, max_levels=max_levels)
+    tree.build(data, prefix=group)
+    if group_order is not None:
+        tree.order(group_order)
+    if hue_order is not None:
+        tree.sort_values(hue_order)
+
+    mean_vals = data.groupby(hue)[hue_order].mean()
+    if isinstance(mean_vals, pd.Series):
+        mean_vals = mean_vals.to_frame()
+    mean_vals.sort_values(hue_order, inplace=True)
+    hue_order_index = mean_vals.index
+
+    cumulative_span = pad
+    for i, leaf in enumerate(tree.leaves):
+        leaf.leaf_id = i
+        leaf.center_span = cumulative_span + leaf.size / 2
+        cumulative_span += leaf.size + pad
+
+    _, ax = plt.subplots(1, 1, figsize=figsize)
+    ax.invert_yaxis()
+
+    if palette is None:
+        colors = cc.glasbey_light
+        vals = np.unique(data[hue])
+        palette = dict(zip(vals, colors))
+
+    _dendrogram_root_aligned(
+        tree,
+        hue=hue,
+        ax=ax,
+        orient=orient,
+        palette=palette,
+        hue_order_index=hue_order_index,
+    )
+
+    _draw_connector_lines(tree, orient=orient, ax=ax, thickness=thickness)
+
+    soft_axis_off(ax)
+
+    return ax
