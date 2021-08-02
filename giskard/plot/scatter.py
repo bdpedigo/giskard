@@ -193,7 +193,6 @@ def matched_stripplot(
             **matchline_kws,
         )
     ax.set(xlabel=x, xticks=np.arange(len(unique_x_var)), xticklabels=unique_x_var)
-    ax.get_legend().remove()
     return ax
 
 
