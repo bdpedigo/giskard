@@ -5,6 +5,9 @@ import pandas as pd
 from anytree import NodeMixin, PreOrderIter, Walker
 from sklearn.base import BaseEstimator
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 
 class BaseNetworkTree(NodeMixin, BaseEstimator):
     def __init__(self, min_split=32, max_levels=2, verbose=False, loops=False):
@@ -32,6 +35,11 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
             self._split(adjacency, partition_labels)
 
         return self
+
+    @property
+    def adjacency_index(self):
+
+        return self.node_data["adjacency_index"].values
 
     def _check_node_data(self, adjacency, node_data=None):
         if node_data is None and self.is_root:
@@ -109,26 +117,54 @@ class BaseNetworkTree(NodeMixin, BaseEstimator):
             probability_estimate = adjacency.count_nonzero() / adjacency.shape[0]
         return probability_estimate
 
+    # def _estimate_parameters(self, adjacency):
+    #     mask_arr = np.zeros(adjacency.shape[0], dtype=bool)
+    #     indices = self.node_data["adjacency_index"]
+    #     mask_arr[indices] = True
+    #     mask = mask_arr[:, None] & mask_arr[None, :]
+
+    #     if self.is_leaf and not self.loops:
+    #         mask[indices, indices] = False
+    #     else:
+    #         counted = mask.copy()
+    #         for child in self.children:
+    #             child_mask = child._estimate_parameters(adjacency)
+    #             mask[child_mask] = False
+    #             counted[child_mask] = True
+
+    #     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    #     sns.heatmap(mask)
+    #     probability_estimate = self._aggregate_edges(adjacency[mask])
+    #     self.probability_estimate_ = probability_estimate
+    #     if self.is_leaf and not self.loops:
+    #         mask[indices, indices] = True
+    #         return mask
+    #     else:
+    #         return counted
+
     def _estimate_parameters(self, adjacency):
-        mask_arr = np.zeros(adjacency.shape[0], dtype=bool)
-        indices = self.node_data["adjacency_index"]
-        mask_arr[indices] = True
-        mask = mask_arr[:, None] & mask_arr[None, :]
+        # mask specifies which edges to aggregate over
+        # to start with, this is all nodes in the adjacency matrix
+        mask = np.ones(adjacency.shape, dtype=bool)
         if self.is_leaf and not self.loops:
-            mask[indices, indices] = False
+            # don't aggregate over the diagonal of adjacency matrix
+            mask[np.diag_indices_from(mask)] = False
         else:
-            counted = mask.copy()
+            # counted keeps track of which edges have already been aggregated over by
+            # child nodes
+            node_data = self.node_data.copy()
+            node_data['_current_inds'] = range(len(node_data))
             for child in self.children:
-                child_mask = child._estimate_parameters(adjacency)
-                mask[child_mask] = False
-                counted[child_mask] = True
+                child_inds = node_data.loc[child._index, "_current_inds"]
+                mask[np.ix_(child_inds, child_inds)] = False
+
+                child._estimate_parameters(
+                    adjacency[child_inds][:, child_inds]
+                )
+
         probability_estimate = self._aggregate_edges(adjacency[mask])
         self.probability_estimate_ = probability_estimate
-        if self.is_leaf and not self.loops:
-            mask[indices, indices] = True
-            return mask
-        else:
-            return counted
+
 
     @property
     def full_probability_matrix(self):
