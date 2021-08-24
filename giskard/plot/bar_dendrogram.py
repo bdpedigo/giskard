@@ -67,7 +67,7 @@ class MetaTree(NodeMixin, BaseEstimator):
         if key in node_data.columns and self._check_continue_splitting():
             groups = node_data.groupby(key)
             for _, group_data in groups:
-                child = MetaTree()
+                child = MetaTree(min_split=self.min_split, max_levels=self.max_levels)
                 child.parent = self
                 child._index = group_data.index
                 child.build(group_data, prefix=prefix, postfix=postfix)
@@ -143,16 +143,16 @@ def _draw_connector_lines(tree, orient="h", linewidth=1, ax=None, thickness=0.5)
 
             spans = [mean_span, mean_span]
             extents = [current_bottom, middle]
-            _draw_line(spans, extents, ax=ax, orient=orient)
+            _draw_line(spans, extents, ax=ax, orient=orient, linewidth=linewidth)
 
             spans = [min_span, max_span]
             extents = [middle, middle]
-            _draw_line(spans, extents, ax=ax, orient=orient)
+            _draw_line(spans, extents, ax=ax, orient=orient, linewidth=linewidth)
 
             extents = [middle, next_top]
             for child in children:
                 spans = [child.center_span, child.center_span]
-                _draw_line(spans, extents, ax=ax, orient=orient)
+                _draw_line(spans, extents, ax=ax, orient=orient, linewidth=linewidth)
 
 
 def dendrogram_barplot(
@@ -170,6 +170,7 @@ def dendrogram_barplot(
     figsize=(10, 2),
     palette=None,
     thickness=0.5,
+    linewidth=1,
 ):
     data = data.copy()
 
@@ -195,14 +196,15 @@ def dendrogram_barplot(
     mean_vals.sort_values(hue_order, inplace=True)
     hue_order_index = mean_vals.index
 
-    cumulative_span = pad
+    cumulative_span = 0
     for i, leaf in enumerate(tree.leaves):
         leaf.leaf_id = i
         leaf.center_span = cumulative_span + leaf.size / 2
         cumulative_span += leaf.size + pad
 
     _, ax = plt.subplots(1, 1, figsize=figsize)
-    ax.invert_yaxis()
+    # ax.invert_yaxis()
+    ax.set_ylim((cumulative_span, 0))
 
     if palette is None:
         colors = cc.glasbey_light
@@ -218,7 +220,9 @@ def dendrogram_barplot(
         hue_order_index=hue_order_index,
     )
 
-    _draw_connector_lines(tree, orient=orient, ax=ax, thickness=thickness)
+    _draw_connector_lines(
+        tree, orient=orient, ax=ax, thickness=thickness, linewidth=linewidth
+    )
 
     soft_axis_off(ax)
 
