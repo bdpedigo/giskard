@@ -173,17 +173,23 @@ class MetaTree(BaseNetworkTree):
     def _check_continue_splitting(self):
         return len(self._index) >= self.min_split and self.depth < self.max_levels
 
-    def build(self, node_data, prefix="", postfix=""):
+    @property
+    def size(self):
+        return len(self._index)
+
+    def build(self, node_data, prefix="", postfix="", offset=0):
         if self.is_root and ("adjacency_index" not in node_data.columns):
             node_data = node_data.copy()
             node_data["adjacency_index"] = range(len(node_data))
         self._index = node_data.index
         self._node_data = node_data
-        key = prefix + f"{self.depth}" + postfix
+        key = prefix + f"{self.depth+offset}" + postfix
         if key in node_data and self._check_continue_splitting():
-            groups = node_data.groupby(key)
-            for name, group in groups:
-                child = MetaTree()
-                child.parent = self
-                child._index = group.index
-                child.build(group, prefix=prefix, postfix=postfix)
+            if node_data[key].nunique() > 1:
+                groups = node_data.groupby(key, dropna=False)
+                for name, group in groups:
+                    child = self.__class__(**self.get_params())
+                    child.name = name
+                    child.parent = self
+                    child._index = group.index
+                    child.build(group, prefix=prefix, postfix=postfix, offset=offset)
