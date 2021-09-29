@@ -18,6 +18,7 @@ class MaggotGraph:
             # TODO
             raise NotImplementedError()
         self.nodes = nodes
+        _add_missing_nodes(g, nodes.index)
         if edges is None:
             edges = to_pandas_edgelist(g)
         self.edges = edges
@@ -214,3 +215,9 @@ class MaggotGraph:
             print(
                 f"Removed {n_removed} nodes when taking the largest connected component."
             )
+
+
+def _add_missing_nodes(g, nodes_to_check):
+    nodelist = list(g.nodes)
+    missing_nodes = np.setdiff1d(nodes_to_check, nodelist)
+    g.add_nodes_from(missing_nodes)
