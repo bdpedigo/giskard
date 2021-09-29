@@ -17,3 +17,4 @@ from .theme import set_theme
 from .tree import plot_dendrogram
 from .bar_dendrogram import dendrogram_barplot
 from .pairplot import pairplot
+from .old_matrixplot import adjplot, matrixplot

@@ -154,3 +154,4 @@ def scattermap(data, ax=None, legend=False, sizes=(5, 10), **kws):
     ax.set_ylabel("")
     ax.set_xlabel("")
     return ax
+
