@@ -175,16 +175,13 @@ class MaggotGraph:
             right_ids = nodes[nodes["hemisphere"] == "R"].index
         left_left_mg = self.node_subgraph(left_ids)
         right_right_mg = self.node_subgraph(right_ids)
-        left_right_mg = self.node_subgraph(left_ids, right_ids)
         left_left_mg = self.node_subgraph(left_ids)
-        right_left_mg = self.node_subgraph(right_ids, left_ids)
 
         if lcc:
-            raise NotImplementedError()
-            # TODO add something about checking for largest connected components here as
-            # an option
+            left_left_mg.to_largest_connected_component()
+            right_right_mg.to_largest_connected_component()
 
-        return left_left_mg, right_right_mg, left_right_mg, right_left_mg
+        return left_left_mg, right_right_mg
 
     def fix_pairs(self, pair_key="pair", pair_id_key="pair_id"):
         nodes = self.nodes
