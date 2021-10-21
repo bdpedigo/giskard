@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import colorcet as cc
+import matplotlib as mpl
 
 
 def soft_axis_off(ax, top=False, bottom=False, left=False, right=False):
@@ -70,3 +71,31 @@ def make_axes(ax=None, figsize=(8, 6)):
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=figsize)
     return ax
+
+
+def remove_shared_ax(ax, x=True, y=True):
+
+    axes = []
+    if x:
+        shax = ax.get_shared_x_axes()
+        shax.remove(ax)
+        axes.append(ax.xaxis)
+    if y:
+        shay = ax.get_shared_y_axes()
+        shay.remove(ax)
+        axes.append(ax.yaxis)
+
+    for axis in axes:
+        ticker = mpl.axis.Ticker()
+        axis.major = ticker
+        axis.minor = ticker
+        loc = mpl.ticker.NullLocator()
+        fmt = mpl.ticker.NullFormatter()
+        axis.set_major_locator(loc)
+        axis.set_major_formatter(fmt)
+        axis.set_minor_locator(loc)
+        axis.set_minor_formatter(fmt)
+
+
+def rotate_labels(ax):
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")

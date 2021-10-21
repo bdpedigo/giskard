@@ -30,3 +30,8 @@ def timer(f):
         return result
 
     return wrap
+
+
+def get_random_seed(random_state):
+    seed = random_state.integers(np.iinfo(np.int32).max)
+    return seed
