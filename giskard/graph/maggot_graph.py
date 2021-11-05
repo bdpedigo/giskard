@@ -181,6 +181,22 @@ class MaggotGraph:
             left_left_mg.to_largest_connected_component()
             right_right_mg.to_largest_connected_component()
 
+        if paired and lcc:
+            # when taking the LCCs in the above, individual graphs can be disconnected,
+            # so this repeats the process to make sure we are on the right node set
+            index = np.concatenate(
+                (left_left_mg.nodes.index.values, right_right_mg.nodes.index.values)
+            )
+            subgraph = self.node_subgraph(index)
+            left_left_mg, right_right_mg = subgraph.bisect(
+                paired=paired,
+                lcc=False,
+                check_in=check_in,
+                pair_key=pair_key,
+                pair_id_key=pair_id_key,
+            )
+            assert len(left_left_mg) == len(right_right_mg)
+            
         return left_left_mg, right_right_mg
 
     def fix_pairs(self, pair_key="pair", pair_id_key="pair_id"):
