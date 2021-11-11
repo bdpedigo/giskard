@@ -40,16 +40,21 @@ def signal_flow(A):
     return z
 
 
+from scipy.stats import rankdata
+
+
 def rank_signal_flow(A):
     sf = signal_flow(A)
-    perm_inds = np.argsort(-sf)
-    return perm_inds
+    # perm_inds = np.argsort(-sf)
+    rank = rankdata(-sf)
+    return rank
 
 
 def rank_graph_match_flow(A, n_init=5, max_iter=30, eps=1e-4, **kwargs):
     n = len(A)
     try:
-        initial_perm = rank_signal_flow(A)
+        sf = signal_flow(A)
+        initial_perm = np.argsort(-sf)
         init = np.eye(n)[initial_perm]
     except np.linalg.LinAlgError:
         print("WARNING: SVD did not converge in signal flow")

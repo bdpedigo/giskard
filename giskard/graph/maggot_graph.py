@@ -18,6 +18,7 @@ class MaggotGraph:
             # TODO
             raise NotImplementedError()
         self.nodes = nodes
+        _add_missing_nodes(g, nodes.index)
         if edges is None:
             edges = to_pandas_edgelist(g)
         self.edges = edges
@@ -174,16 +175,29 @@ class MaggotGraph:
             right_ids = nodes[nodes["hemisphere"] == "R"].index
         left_left_mg = self.node_subgraph(left_ids)
         right_right_mg = self.node_subgraph(right_ids)
-        left_right_mg = self.node_subgraph(left_ids, right_ids)
         left_left_mg = self.node_subgraph(left_ids)
-        right_left_mg = self.node_subgraph(right_ids, left_ids)
 
         if lcc:
-            raise NotImplementedError()
-            # TODO add something about checking for largest connected components here as
-            # an option
+            left_left_mg.to_largest_connected_component()
+            right_right_mg.to_largest_connected_component()
 
-        return left_left_mg, right_right_mg, left_right_mg, right_left_mg
+        if paired and lcc:
+            # when taking the LCCs in the above, individual graphs can be disconnected,
+            # so this repeats the process to make sure we are on the right node set
+            index = np.concatenate(
+                (left_left_mg.nodes.index.values, right_right_mg.nodes.index.values)
+            )
+            subgraph = self.node_subgraph(index)
+            left_left_mg, right_right_mg = subgraph.bisect(
+                paired=paired,
+                lcc=False,
+                check_in=check_in,
+                pair_key=pair_key,
+                pair_id_key=pair_id_key,
+            )
+            assert len(left_left_mg) == len(right_right_mg)
+            
+        return left_left_mg, right_right_mg
 
     def fix_pairs(self, pair_key="pair", pair_id_key="pair_id"):
         nodes = self.nodes
@@ -214,3 +228,9 @@ class MaggotGraph:
             print(
                 f"Removed {n_removed} nodes when taking the largest connected component."
             )
+
+
+def _add_missing_nodes(g, nodes_to_check):
+    nodelist = list(g.nodes)
+    missing_nodes = np.setdiff1d(nodes_to_check, nodelist)
+    g.add_nodes_from(missing_nodes)

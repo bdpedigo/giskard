@@ -1,3 +1,10 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import colorcet as cc
+import matplotlib as mpl
+
+
 def soft_axis_off(ax, top=False, bottom=False, left=False, right=False):
     ax.set(xlabel="", ylabel="", xticks=[], yticks=[])
     ax.spines["top"].set_visible(top)
@@ -41,3 +48,54 @@ def legend_upper_right(ax, **kwargs):
     ax.get_legend().remove()
     leg = ax.legend(bbox_to_anchor=(1, 1), loc="upper left", **kwargs)
     return leg
+
+
+def make_palette(
+    labels, palette=None, default=None, size_threshold=None, top_k_threshold=None
+):
+    # TODO capability to only color the top k categories
+    # TODO pass back the palette if it exists
+    # TODO optionally add a default value for all unmentioned/below threshold labels
+    raise NotImplementedError()
+    uni_labels, counts = np.unique(labels, return_counts=True)
+    n_categories = len(uni_labels)
+    if n_categories <= 10:
+        colors = sns.color_palette("tab10")
+    elif n_categories <= 20:
+        colors = sns.color_palette("tab20")
+    else:
+        colors = cc.glasbey_light
+
+
+def make_axes(ax=None, figsize=(8, 6)):
+    if ax is None:
+        _, ax = plt.subplots(1, 1, figsize=figsize)
+    return ax
+
+
+def remove_shared_ax(ax, x=True, y=True):
+
+    axes = []
+    if x:
+        shax = ax.get_shared_x_axes()
+        shax.remove(ax)
+        axes.append(ax.xaxis)
+    if y:
+        shay = ax.get_shared_y_axes()
+        shay.remove(ax)
+        axes.append(ax.yaxis)
+
+    for axis in axes:
+        ticker = mpl.axis.Ticker()
+        axis.major = ticker
+        axis.minor = ticker
+        loc = mpl.ticker.NullLocator()
+        fmt = mpl.ticker.NullFormatter()
+        axis.set_major_locator(loc)
+        axis.set_major_formatter(fmt)
+        axis.set_minor_locator(loc)
+        axis.set_minor_formatter(fmt)
+
+
+def rotate_labels(ax):
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")

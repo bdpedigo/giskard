@@ -1,5 +1,7 @@
 import numpy as np
 from itertools import chain, combinations
+from functools import wraps
+import time
 
 
 def careys_rule(X):
@@ -14,3 +16,22 @@ def powerset(iterable, ignore_empty=True):
     return list(
         chain.from_iterable(combinations(s, r) for r in range(ignore_empty, len(s) + 1))
     )
+
+
+def timer(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time.time()
+        result = f(*args, **kw)
+        te = time.time()
+        sec = te - ts
+        output = f"Function {f.__name__} took {sec:.3f} seconds."
+        print(output)
+        return result
+
+    return wrap
+
+
+def get_random_seed(random_state):
+    seed = random_state.integers(np.iinfo(np.int32).max)
+    return seed

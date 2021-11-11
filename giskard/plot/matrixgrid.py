@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from .utils import soft_axis_off
 
 # data=None,
 # row_meta=None,
@@ -54,21 +55,26 @@ class MatrixGrid:
             "right": self.right_axs,
         }
 
+        self._set_spines(spines)
+
+    def _set_spines(self, spines):
+        soft_axis_off(ax=self.ax, left=spines, right=spines, top=spines, bottom=spines)
+
     @property
     def all_top_axs(self):
-        return [self.ax] + [self.top_axs]
+        return [self.ax] + self.top_axs
 
     @property
     def all_bottom_axs(self):
-        return [self.ax] + [self.bottom_axs]
+        return [self.ax] + self.bottom_axs
 
     @property
     def all_left_axs(self):
-        return [self.ax] + [self.left_axs]
+        return [self.ax] + self.left_axs
 
     @property
     def all_right_axs(self):
-        return [self.ax] + [self.right_axs]
+        return [self.ax] + self.right_axs
 
     def append_axes(self, side, size="10%", pad=0):
         kws = {}
