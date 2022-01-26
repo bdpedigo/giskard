@@ -101,7 +101,7 @@ def plot_squarelines(
     return lc
 
 
-def scattermap(data, ax=None, legend=False, sizes=(5, 10), **kws):
+def scattermap(data, ax=None, legend=False, sizes=(5, 10), hue=None, **kws):
     r"""
     Draw a matrix using points instead of a heatmap. Helpful for larger, sparse
     matrices.
@@ -136,6 +136,8 @@ def scattermap(data, ax=None, legend=False, sizes=(5, 10), **kws):
     scatter_df["weight"] = edges
     scatter_df["x"] = inds[1]
     scatter_df["y"] = inds[0]
+    if hue is not None:
+        scatter_df["hue"] = hue
     sns.scatterplot(
         data=scatter_df,
         x="x",
@@ -145,6 +147,7 @@ def scattermap(data, ax=None, legend=False, sizes=(5, 10), **kws):
         sizes=sizes,
         ax=ax,
         linewidth=0,
+        hue=hue,
         **kws,
     )
     ax.set_xlim((-1, n_verts + 1))
@@ -154,4 +157,3 @@ def scattermap(data, ax=None, legend=False, sizes=(5, 10), **kws):
     ax.set_ylabel("")
     ax.set_xlabel("")
     return ax
-
