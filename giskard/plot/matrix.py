@@ -150,8 +150,8 @@ def scattermap(data, ax=None, legend=False, sizes=(5, 10), hue=None, **kws):
         hue=hue,
         **kws,
     )
-    ax.set_xlim((-1, n_verts + 1))
-    ax.set_ylim((n_verts + 1, -1))
+    ax.set_xlim((-0.5, n_verts - 0.5))
+    ax.set_ylim((n_verts - 0.5, -0.5))
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_ylabel("")

@@ -163,16 +163,26 @@ def matched_stripplot(
     match=None,
     ax=None,
     matchline_kws=None,
+    order=None,
     **kwargs,
 ):
     data = data.copy()
     if ax is None:
         ax = plt.gca()
 
-    unique_x_var = data[x].unique()
+    if order is None:
+        unique_x_var = data[x].unique()
+    else:
+        unique_x_var = order
     ind_map = dict(zip(unique_x_var, range(len(unique_x_var))))
     data["x"] = data[x].map(ind_map)
-    data["x"] += np.random.uniform(-jitter, jitter, len(data))
+    if match is not None:
+        groups = data.groupby(match)
+        for _, group in groups:
+            perturb = np.random.uniform(-jitter, jitter)
+            data.loc[group.index, "x"] += perturb
+    else:
+        data["x"] += np.random.uniform(-jitter, jitter, len(data))
 
     sns.scatterplot(data=data, x="x", y=y, hue=hue, ax=ax, zorder=1, **kwargs)
 
