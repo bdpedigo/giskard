@@ -18,3 +18,10 @@ git clone https://github.com/bdpedigo/giskard.git
 cd giskard
 pip install -e .
 ```
+
+## Building for release 
+```
+python3 -m build
+```
+Then, add `.tar.gz` and `.whl` to a new release on Github. It should take care of the
+rest.
