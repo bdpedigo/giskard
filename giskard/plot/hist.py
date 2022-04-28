@@ -2,12 +2,14 @@ import numpy as np
 import seaborn as sns
 
 
-def histplot(data, x=None, hue=None, ax=None, side_legend=True, kde=False, **kwargs):
+def histplot(
+    data, x=None, hue=None, ax=None, side_legend=True, kde_only=False, **kwargs
+):
     sizes = data.groupby(hue).size()
     single_hues = np.unique(sizes[sizes == 1].index)
     single_data = data[data[hue].isin(single_hues)]
     other_data = data[~data[hue].isin(single_hues)]
-    if kde:
+    if kde_only:
         sns.kdeplot(
             data=other_data, x=x, hue=hue, ax=ax, legend=True, fill=True, **kwargs
         )
