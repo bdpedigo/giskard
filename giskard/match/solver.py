@@ -245,7 +245,7 @@ class GraphMatchSolver(BaseEstimator):
         return Q
 
     def linear_sum_assignment(self, P):
-        row_perm = np.random.permutation(P.shape[1])
+        row_perm = self.rng.permutation(P.shape[1])
         undo_row_perm = np.argsort(row_perm)
         P_perm = P[row_perm]
         _, permutation = linear_sum_assignment(P_perm, maximize=self.maximize)
