@@ -10,6 +10,21 @@ from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 from scipy.sparse import csr_matrix
 
+from graspologic.types import AdjacencyMatrix
+from typing import Optional, Union, Literal
+from graspologic.types import List
+from beartype import beartype
+
+
+# Type aliases
+PaddingType = Literal["adopted", "naive"]
+InitMethodType = Literal["barycenter", "rand", "randomized"]
+RandomStateType = Optional[Union[int, np.random.RandomState, np.random.Generator]]
+ArrayLikeOfIndexes = Union[List[int], np.ndarray]
+MultilayerAdjacency = Union[List[AdjacencyMatrix], AdjacencyMatrix, np.ndarray]
+Scalar = Union[int, float, np.integer, np.float]
+Int = Union[int, np.integer]
+
 
 def parametrized(dec):
     def layer(*args, **kwargs):
@@ -46,26 +61,27 @@ def write_status(f, msg, level):
 
 
 class GraphMatchSolver(BaseEstimator):
+    @beartype
     def __init__(
         self,
-        A,
-        B,
-        AB=None,
-        BA=None,
-        similarity=None,
-        partial_match=None,
-        rng=None,
-        init=1.0,
-        verbose=False,  # 0 is nothing, 1 is loops, 2 is loops + sub, 3, is loops + sub + timing
-        shuffle_input=True,
-        maximize=True,
-        maxiter=30,
-        tol=0.01,
-        transport=False,
-        transport_regularizer=100,
-        transport_tolerance=5e-2,
-        transport_implementation="pot",
-        transport_maxiter=500,
+        A: MultilayerAdjacency,
+        B: MultilayerAdjacency,
+        AB: Optional[MultilayerAdjacency] = None,
+        BA: Optional[MultilayerAdjacency] = None,
+        similarity: Optional[AdjacencyMatrix] = None,
+        partial_match: Optional[np.ndarray] = None,
+        rng: Optional[RandomStateType] = None,
+        init: Optional[Scalar] = 1.0,
+        verbose: Int = False,  # 0 is nothing, 1 is loops, 2 is loops + sub, 3, is loops + sub + timing
+        shuffle_input: bool = True,
+        maximize: bool = True,
+        maxiter: Int = 30,
+        tol: Scalar = 0.01,
+        transport: bool = False,
+        transport_regularizer: Scalar = 100,
+        transport_tolerance: Scalar = 5e-2,
+        transport_implementation: Literal["pot", "ds"] = "pot",
+        transport_maxiter: Int = 500,
     ):
         # TODO more input checking
         self.rng = check_random_state(rng)
@@ -110,11 +126,20 @@ class GraphMatchSolver(BaseEstimator):
         # convert everything to make sure they are 3D arrays (first dim is layer)
         A = _check_input_matrix(A)
         B = _check_input_matrix(B)
-        AB = _check_input_matrix(AB)
-        BA = _check_input_matrix(BA)
+
         self.n_A = A[0].shape[0]
         self.n_B = B[0].shape[0]
         self.n_layers = len(A)
+
+        if AB is None:
+            AB = np.zeros((self.n_layers, self.n_A, self.n_B))
+        if BA is None:
+            BA = np.zeros((self.n_layers, self.n_B, self.n_A))
+
+        AB = _check_input_matrix(AB)
+        BA = _check_input_matrix(BA)
+
+        # TODO check all have same number of layers
 
         if isinstance(A[0], csr_matrix):
             self._sparse = True
@@ -124,11 +149,6 @@ class GraphMatchSolver(BaseEstimator):
             self._sparse = False
             self._compute_gradient = njit(_compute_gradient)
             self._compute_coefficients = njit(_compute_coefficients)
-
-        if AB is None:
-            AB = np.zeros((self.n_layers, self.n_A, self.n_B))
-        if BA is None:
-            BA = np.zeros((self.n_layers, self.n_B, self.n_A))
 
         n_seeds = len(partial_match)
         self.n_seeds = n_seeds
@@ -357,6 +377,16 @@ def _check_input_matrix(A):
     elif isinstance(A, csr_matrix):
         A = [A]
     elif isinstance(A, list):
+        # iterate over to make sure they're all same shape
+        first_layer = A[0]
+        for i in range(1, len(A)):
+            layer = A[i]
+            if (layer.shape[0] != first_layer.shape[0]) or (
+                layer.shape[1] != first_layer.shape[1]
+            ):
+                raise ValueError(
+                    "Layers in a multilayer network must all share the same shape."
+                )
         if isinstance(A[0], np.ndarray):
             A = np.array(A, dtype=float)
         elif isinstance(A[0], csr_matrix):
