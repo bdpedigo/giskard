@@ -3,11 +3,12 @@ from functools import wraps
 
 import numpy as np
 from graspologic.types import Tuple
-from numba import jit
+from numba import njit
 from ot import sinkhorn
 from scipy.optimize import linear_sum_assignment
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
+from scipy.sparse import csr_matrix
 
 
 def parametrized(dec):
@@ -111,22 +112,31 @@ class GraphMatchSolver(BaseEstimator):
         B = _check_input_matrix(B)
         AB = _check_input_matrix(AB)
         BA = _check_input_matrix(BA)
-
         self.n_A = A[0].shape[0]
         self.n_B = B[0].shape[0]
+        self.n_layers = len(A)
+
+        if isinstance(A[0], csr_matrix):
+            self._sparse = True
+            self._compute_gradient = _compute_gradient
+            self._compute_coefficients = _compute_coefficients
+        else:
+            self._sparse = False
+            self._compute_gradient = njit(_compute_gradient)
+            self._compute_coefficients = njit(_compute_coefficients)
 
         if AB is None:
-            AB = np.zeros((A.shape[0], A.shape[1], B.shape[1]))
+            AB = np.zeros((self.n_layers, self.n_A, self.n_B))
         if BA is None:
-            BA = np.zeros((B.shape[0], B.shape[1], A.shape[1]))
+            BA = np.zeros((self.n_layers, self.n_B, self.n_A))
 
         n_seeds = len(partial_match)
         self.n_seeds = n_seeds
 
         # set up so that seeds are first and we can grab subgraphs easily
         # TODO could also do this slightly more efficiently just w/ smart indexing?
-        nonseed_A = np.setdiff1d(range(len(A[0])), partial_match[:, 0])
-        nonseed_B = np.setdiff1d(range(len(B[0])), partial_match[:, 1])
+        nonseed_A = np.setdiff1d(range(A[0].shape[0]), partial_match[:, 0])
+        nonseed_B = np.setdiff1d(range(B[0].shape[0]), partial_match[:, 1])
         perm_A = np.concatenate([partial_match[:, 0], nonseed_A])
         perm_B = np.concatenate([partial_match[:, 1], nonseed_B])
         self._undo_perm_A = np.argsort(perm_A)
@@ -153,7 +163,9 @@ class GraphMatchSolver(BaseEstimator):
             similarity = np.zeros((self.n_A, self.n_B))
 
         similarity = similarity[perm_A][:, perm_B]
-        self.S_ss, self.S_sn, self.S_ns, self.S = _split_matrix(similarity, n_seeds)
+        self.S_ss, self.S_sn, self.S_ns, self.S = _split_matrix(
+            similarity, n_seeds, single_layer=True
+        )
 
     def solve(self):
         self.n_iter = 0
@@ -208,7 +220,7 @@ class GraphMatchSolver(BaseEstimator):
 
     @write_status("Computing constant terms", 2)
     def compute_constant_terms(self):
-        self.constant_sum = np.zeros(self.B.shape)
+        self.constant_sum = np.zeros((self.n_layers, self.n_B, self.n_B))
         if self._seeded:
             n_layers = len(self.A)
             ipsi = []
@@ -229,7 +241,7 @@ class GraphMatchSolver(BaseEstimator):
 
     @write_status("Computing gradient", 2)
     def compute_gradient(self, P):
-        gradient = _compute_gradient(
+        gradient = self._compute_gradient(
             P, self.A, self.B, self.AB, self.BA, self.constant_sum
         )
         return gradient
@@ -279,7 +291,7 @@ class GraphMatchSolver(BaseEstimator):
 
     @write_status("Computing step size", 2)
     def compute_step_size(self, P, Q):
-        a, b = _compute_coefficients(
+        a, b = self._compute_coefficients(
             P,
             Q,
             self.A,
@@ -342,12 +354,16 @@ def _check_input_matrix(A):
     if isinstance(A, np.ndarray) and (np.ndim(A) == 2):
         A = np.expand_dims(A, axis=0)
         A = A.astype(float)
-    if isinstance(A, list):
-        A = np.array(A, dtype=float)
+    elif isinstance(A, csr_matrix):
+        A = [A]
+    elif isinstance(A, list):
+        if isinstance(A[0], np.ndarray):
+            A = np.array(A, dtype=float)
+        elif isinstance(A[0], csr_matrix):
+            pass
     return A
 
 
-@jit(nopython=True)
 def _compute_gradient(P, A, B, AB, BA, const_sum):
     n_layers = A.shape[0]
     grad = np.zeros_like(P)
@@ -365,7 +381,6 @@ def _compute_gradient(P, A, B, AB, BA, const_sum):
 #
 
 
-@jit(nopython=True)
 def _compute_coefficients(
     P, Q, A, B, AB, BA, A_ns, A_sn, B_ns, B_sn, AB_ns, AB_sn, BA_ns, BA_sn, S
 ):
@@ -422,10 +437,10 @@ def _doubly_stochastic(P: np.ndarray, tol: float = 1e-3) -> np.ndarray:
 
 
 def _split_matrix(
-    matrices: np.ndarray, n: int
+    matrices: np.ndarray, n: int, single_layer: bool = False
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     # definitions according to Seeded Graph Matching [2].
-    if matrices.ndim == 2:
+    if single_layer:
         matrices = [matrices]
     n_layers = len(matrices)
     seed_to_seed = []
