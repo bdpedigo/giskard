@@ -45,6 +45,7 @@ def confusionplot(
         **kwargs,
     )
     ax.set(ylabel=ylabel, xlabel=xlabel)
+    ax.set(xticks=ax.get_yticks(), xticklabels=ax.get_yticklabels())
 
     if title != False:
         if add_diag_proportion:

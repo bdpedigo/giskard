@@ -26,3 +26,4 @@ from .bar_dendrogram import dendrogram_barplot
 from .pairplot import pairplot
 from .old_matrixplot import adjplot, matrixplot
 from .subuniformity import subuniformity_plot
+from .upset import upset_catplot, plot_upset_indicators
