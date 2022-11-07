@@ -1,6 +1,6 @@
 import numpy as np
 from graspologic.utils import remove_loops
-from graspologic.match import GraphMatch
+from graspologic.match import graph_match
 
 
 def estimate_spring_rank_P(A, ranks, beta):
@@ -62,8 +62,11 @@ def rank_graph_match_flow(A, n_init=5, max_iter=30, eps=1e-4, **kwargs):
     match_mat = np.zeros((n, n))
     triu_inds = np.triu_indices(n, k=1)
     match_mat[triu_inds] = 1
-    gm = GraphMatch(n_init=n_init, max_iter=max_iter, init=init, eps=eps, **kwargs)
-    perm_inds = gm.fit_predict(match_mat, A)
+    # gm = GraphMatch(n_init=n_init, max_iter=max_iter, init=init, eps=eps, **kwargs)
+    # perm_inds = gm.fit_predict(match_mat, A)
+    _, perm_inds, _, _ = graph_match(
+        match_mat, A, init=init, n_init=n_init, max_iter=max_iter, tol=eps, **kwargs
+    )
     return perm_inds
 
 
