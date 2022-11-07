@@ -14,30 +14,31 @@ def joint_procrustes(
     n = len(data1[0])
     if method == "orthogonal":
         procruster = OrthogonalProcrustes()
-    elif method == "seedless":
-        procruster = SeedlessProcrustes(init="sign_flips")
-    elif method == "seeded":
-        paired_inds1 = seeds[0]
-        paired_inds2 = seeds[1]
-        X1_paired = data1[0][paired_inds1, :]
-        X2_paired = data2[0][paired_inds2, :]
-        if swap:
-            Y1_paired = data1[1][paired_inds2, :]
-            Y2_paired = data2[1][paired_inds1, :]
+    elif method == "transport":
+        if seeds is None:
+            procruster = SeedlessProcrustes(init="sign_flips")
         else:
-            Y1_paired = data1[1][paired_inds1, :]
-            Y2_paired = data2[1][paired_inds2, :]
-        data1_paired = np.concatenate((X1_paired, Y1_paired), axis=0)
-        data2_paired = np.concatenate((X2_paired, Y2_paired), axis=0)
-        op = OrthogonalProcrustes()
-        op.fit(data1_paired, data2_paired)
-        procruster = SeedlessProcrustes(
-            init="custom",
-            initial_Q=op.Q_,
-            optimal_transport_eps=1.0,
-            optimal_transport_num_reps=100,
-            iterative_num_reps=10,
-        )
+            paired_inds1 = seeds[0]
+            paired_inds2 = seeds[1]
+            X1_paired = data1[0][paired_inds1, :]
+            X2_paired = data2[0][paired_inds2, :]
+            if swap:
+                Y1_paired = data1[1][paired_inds2, :]
+                Y2_paired = data2[1][paired_inds1, :]
+            else:
+                Y1_paired = data1[1][paired_inds1, :]
+                Y2_paired = data2[1][paired_inds2, :]
+            data1_paired = np.concatenate((X1_paired, Y1_paired), axis=0)
+            data2_paired = np.concatenate((X2_paired, Y2_paired), axis=0)
+            op = OrthogonalProcrustes()
+            op.fit(data1_paired, data2_paired)
+            procruster = SeedlessProcrustes(
+                init="custom",
+                initial_Q=op.Q_,
+                optimal_transport_eps=1.0,
+                optimal_transport_num_reps=100,
+                iterative_num_reps=10,
+            )
     data1 = np.concatenate(data1, axis=0)
     data2 = np.concatenate(data2, axis=0)
     currtime = time.time()
