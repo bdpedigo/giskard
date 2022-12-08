@@ -28,8 +28,10 @@ def histplot(
         handles.append(line)
         labels.append(row[hue])
 
+    ax.get_legend().remove()
     if side_legend:
-        ax.get_legend().remove()
         ax.legend(
             handles=handles, labels=labels, bbox_to_anchor=(1, 1), loc="upper left"
         )
+    else:
+        ax.legend(handles=handles, labels=labels)
