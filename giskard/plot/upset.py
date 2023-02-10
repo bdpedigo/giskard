@@ -48,9 +48,10 @@ def upset_catplot(
         fig = ax.get_figure()
 
     data = data.copy()
-    groupby = data.groupby(x)
-    combos = groupby.groups.keys()
-    combos = pd.DataFrame(combos, columns=x).set_index(x)
+    groupby = data.groupby(x, sort=False)
+
+    # combos = groupby.groups.keys()
+    # combos = pd.DataFrame(combos, columns=x).set_index(x)
 
     # create a dummy variable for seaborn-style plotting
     group_estimates = []
@@ -59,11 +60,10 @@ def upset_catplot(
         data.loc[index, "all_x_vars"] = str(combo)
         if estimator is not None:
             group_estimates.append(estimator(data.loc[index, y]))
-
     if kind == "bar":
-        sns.barplot(data=data, x="all_x_vars", y=y, hue=hue, **kwargs)
+        sns.barplot(data=data, x="all_x_vars", y=y, hue=hue, ax=ax, **kwargs)
     elif kind == "strip":
-        sns.stripplot(data=data, x="all_x_vars", y=y, hue=hue, **kwargs)
+        sns.stripplot(data=data, x="all_x_vars", y=y, hue=hue, ax=ax, **kwargs)
     # TODO : could add other seaborn "kind"s
 
     # TODO : possibly more control over how this gets plotted
@@ -88,6 +88,7 @@ def upset_catplot(
     upset_ax = divider.append_axes(
         "bottom", size=f"{upset_ratio*100}%", sharex=ax, pad=0
     )
+    combos = data.set_index(x)
     plot_upset_indicators(
         combos,
         ax=upset_ax,
@@ -116,7 +117,7 @@ def plot_upset_indicators(
     index = index.reorder_levels(index.names[::-1])
     n_cats = index.nlevels
 
-    idx = np.flatnonzero(index.to_frame()[index.names].values)[::-1]
+    idx = np.flatnonzero(index.to_frame()[index.names].values)  # [::-1]
     c = np.array(["lightgrey"] * len(data) * n_cats, dtype="O")
     c[idx] = facecolor
     x = np.repeat(np.arange(len(data)), n_cats)
