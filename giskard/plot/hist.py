@@ -34,4 +34,5 @@ def histplot(
             handles=handles, labels=labels, bbox_to_anchor=(1, 1), loc="upper left"
         )
     else:
+        ax.get_legend().remove()
         ax.legend(handles=handles, labels=labels)

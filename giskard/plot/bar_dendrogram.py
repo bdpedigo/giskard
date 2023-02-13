@@ -204,7 +204,10 @@ def dendrogram_barplot(
 
     _, ax = plt.subplots(1, 1, figsize=figsize)
     # ax.invert_yaxis()
-    ax.set_ylim((cumulative_span, 0))
+    if orient == "v":
+        ax.set_ylim((cumulative_span, 0))
+    elif orient == "h":
+        ax.set_xlim((0, cumulative_span))
 
     if palette is None:
         colors = cc.glasbey_light
@@ -223,6 +226,10 @@ def dendrogram_barplot(
     _draw_connector_lines(
         tree, orient=orient, ax=ax, thickness=thickness, linewidth=linewidth
     )
+
+    if orient == "h":
+        ylim = ax.get_ylim()
+        ax.set_ylim((ylim[1], ylim[0]))
 
     soft_axis_off(ax)
 
