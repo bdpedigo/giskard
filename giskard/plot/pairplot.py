@@ -3,7 +3,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def pairplot(X, labels=None, figsize=(10, 10), alpha=0.8, linewidth=0, s=10, **kwargs):
+def pairplot(
+    X,
+    labels=None,
+    figsize=(10, 10),
+    alpha=0.8,
+    linewidth=0,
+    s=10,
+    subsample=None,
+    **kwargs,
+):
     # TODO currently has no legend support
     n_dims = X.shape[1]
     data = pd.DataFrame(X, columns=[f"{i}" for i in range(n_dims)])
@@ -12,6 +21,10 @@ def pairplot(X, labels=None, figsize=(10, 10), alpha=0.8, linewidth=0, s=10, **k
         hue = "hue"
     else:
         hue = None
+
+    if subsample is not None:
+        data = data.sample(frac=subsample, replace=False)
+
     fig, axs = plt.subplots(n_dims, n_dims, figsize=figsize)
     for i in range(n_dims):
         for j in range(n_dims):
