@@ -64,6 +64,7 @@ def upset_catplot(
         sns.barplot(data=data, x="all_x_vars", y=y, hue=hue, ax=ax, **kwargs)
     elif kind == "strip":
         sns.stripplot(data=data, x="all_x_vars", y=y, hue=hue, ax=ax, **kwargs)
+
     # TODO : could add other seaborn "kind"s
 
     # TODO : possibly more control over how this gets plotted
